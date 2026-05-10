@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Ugwu Valentine Nnannaya.
+ * All rights reserved.
+ *
+ * This project is proprietary. Unauthorized copying,
+ * modification, or distribution is not permitted.
+ */
+
 #ifndef ADAM_HPP
 #define ADAM_HPP
 
@@ -37,10 +45,10 @@ public:
 			size_t N
 		,   parameters& params
 		,   gradients& grad
-		,   alpha
-		,   beta 
-		,   gamma 
-		,   epsilon
+		,   float alpha
+		,   float beta 
+		,   float gamma 
+		,   float epsilon
 	);
 
 };
