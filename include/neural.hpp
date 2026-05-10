@@ -1,12 +1,10 @@
-#ifndef LEARNER_NEURAL_HPP
-#define LEARNER_NEURAL_HPP
+#ifndef NEURAL_HPP
+#define NEURAL_HPP
 
 #include <logicnn.h>
 #include <logicnn_backprop.h>
 
 #include "board_descriptor.hpp"
-
-namespace chokochess::learner {
 
 using policy_map=std::array<float, 14>;
 using evaluation=float;
@@ -41,6 +39,4 @@ public:
 	backward_pass(const forward_pass& fp, gradients& grad);
 };
 
-} // namespace chokochess::learner
-
-#endif // LEARNER_NEURAL_HPP
+#endif // NEURAL_HPP

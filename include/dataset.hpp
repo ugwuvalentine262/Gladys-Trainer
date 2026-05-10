@@ -1,17 +1,13 @@
-#ifndef LEARNER_DATASET_HPP
-#define LEARNER_DATASET_HPP
+#ifndef DATASET_HPP
+#define DATASET_HPP
 
 #include <vector>
 #include <list>
 #include <fstream>
 #include <array>
 
-#include <chess/board.hpp>
-
 #include "board_descriptor.hpp"
 #include "neural.hpp"
-
-namespace chokochess::learner {
 
 class sample
 {
@@ -45,7 +41,5 @@ public:
 	dataset(const std::string& filename);
 
 };
-    
-} // namespace chokochess::learner
 
-#endif // LEARNER_DATASET_HPP
+#endif // DATASET_HPP

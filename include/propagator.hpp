@@ -1,5 +1,5 @@
-#ifndef LEARNER_PROPAGATOR_HPP
-#define LEARNER_PROPAGATOR_HPP
+#ifndef PROPAGATOR_HPP
+#define PROPAGATOR_HPP
 
 #include <thread>
 #include <atomic>
@@ -13,8 +13,6 @@
 #include "mse.hpp"
 #include "dataset.hpp"
 #include "neural.hpp"
-
-namespace chokochess::learner {
 
 class propagator
 {
@@ -51,6 +49,4 @@ public:
 
 };
 
-} // namespace chokochess::learner
-
-#endif // LEARNER_PROPAGATOR_HPP
+#endif // PROPAGATOR_HPP

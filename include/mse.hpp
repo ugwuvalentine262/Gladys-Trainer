@@ -1,8 +1,6 @@
-#ifndef LEARNER_MSE_HPP
-#define LEARNER_MSE_HPP
+#ifndef MSE_HPP
+#define MSE_HPP
 
-namespace chokochess::learner {
-    
 class mse
 {
 
@@ -12,6 +10,4 @@ public:
 
 };
 
-} // namespace chokochess::learner
-
-#endif // LEARNER_MSE_HPP
+#endif // MSE_HPP

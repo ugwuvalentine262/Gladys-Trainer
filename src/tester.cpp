@@ -1,8 +1,4 @@
-#include "tester.hpp"
-
-namespace chokochess::learner {
-
-} // namespace chokochess::learner
+#include <tester.hpp>
 
 int main(int argc, char *argv[])
 {

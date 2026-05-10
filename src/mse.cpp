@@ -1,6 +1,1 @@
-#include "mse.hpp"
-
-namespace chokochess::learner {
-    
-} // namespace chokochess::learner
-
+#include <mse.hpp>

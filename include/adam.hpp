@@ -1,10 +1,8 @@
-#ifndef LEARNER_ADAM_HPP
-#define LEARNER_ADAM_HPP
+#ifndef ADAM_HPP
+#define ADAM_HPP
 
 #include <string>
 #include <vector>
-
-namespace chokochess::learner {
 
 class adam
 {
@@ -47,6 +45,4 @@ public:
 
 };
 
-} // namespace chokochess::learner
-
-#endif // LEARNER_ADAM_HPP
+#endif // ADAM_HPP

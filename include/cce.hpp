@@ -1,8 +1,6 @@
-#ifndef LEARNER_CCE_HPP
-#define LEARNER_CCE_HPP
+#ifndef CCE_HPP
+#define CCE_HPP
 
-namespace chokochess::learner {
-    
 class cce 
 {
 
@@ -12,6 +10,4 @@ public:
 
 };
 
-} // namespace chokochess::learner
-
-#endif // LEARNER_CCE_HPP
+#endif // CCE_HPP

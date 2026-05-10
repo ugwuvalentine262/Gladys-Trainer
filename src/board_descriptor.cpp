@@ -1,5 +1,1 @@
-#include "board_descriptor"
-
-namespace chokochess::learner {
-
-} // chokochess::learner
+#include <board_descriptor.hpp>

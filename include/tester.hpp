@@ -1,5 +1,5 @@
-#ifndef LEARNER_TESTER_HPP
-#define LEARNER_TESTER_HPP
+#ifndef TESTER_HPP
+#define TESTER_HPP
 
 #include <vector>
 #include <thread>
@@ -8,8 +8,6 @@
 
 #include "dataset.hpp"
 #include "neural.hpp"
-
-namespace chokochess::learner {
 
 class tester 
 {
@@ -56,6 +54,4 @@ public:
 
 };
 
-} // namespace chokochess::tester
-
-#endif // LEARNER_TESTER_HPP
+#endif // TESTER_HPP

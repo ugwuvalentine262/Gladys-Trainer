@@ -1,5 +1,5 @@
-#ifndef LEARNER_TRAINER_HPP
-#define LEARNER_TRAINER_HPP
+#ifndef TRAINER_HPP
+#define TRAINER_HPP
 
 #include <string>
 #include <chrono>
@@ -10,8 +10,6 @@
 #include "propagator.hpp"
 #include "dataset.hpp"
 #include "neural.hpp"
-
-namespace chokochess::learner {
 
 class trainer
 {
@@ -62,6 +60,4 @@ public:
 
 };
 
-} // namespace chokochess::learner
-
-#endif // LEARNER_TRAINER_HPP
+#endif // TRAINER_HPP

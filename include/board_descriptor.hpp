@@ -1,13 +1,9 @@
-#ifndef LEARNER_BOARD_DESCRIPTOR_HPP
-#define LEARNER_BOARD_DESCRIPTOR_HPP
-
-namespace chokochess::learner {
+#ifndef BOARD_DESCRIPTOR_HPP
+#define BOARD_DESCRIPTOR_HPP
 
 struct board_descriptor 
 {
     
 };
 
-} // namespace chokochess::learner
-
-#endif // LEARNER_BOARD_DESCRIPTOR_HPP
+#endif // BOARD_DESCRIPTOR_HPP
