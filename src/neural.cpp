@@ -6,5 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
+#include <Eigen/Dense>
+
 #include <neural.hpp>
 #include <board_descriptor.hpp>

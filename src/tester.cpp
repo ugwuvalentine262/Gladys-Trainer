@@ -7,9 +7,26 @@
  */
 
 #include <iostream>
+#include <fstream>
+#include <iomanip>
+
 #include <tester.hpp>
+
+summary tester::test()
+{
+    
+}
+
+tester::tester()
+{
+    
+}
 
 int main(int argc, char *argv[])
 {
+	tester tester;
 
+	summary summary = tester.test();
+
+    std::ofstream ofs(LOG_FILE);
 }

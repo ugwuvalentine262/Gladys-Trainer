@@ -9,6 +9,7 @@
 #ifndef TESTER_HPP
 #define TESTER_HPP
 
+#include <chrono>
 #include <vector>
 #include <thread>
 #include <atomic>
@@ -20,44 +21,21 @@
 class tester 
 {
 
-public:
-
-	struct result
-	{
-		const uint64_t seconds;
-		const uint64_t no_of_samples;
-		const float cce_loss;
-		const float mse_loss;
-		const float accuracy;
-
-		const std::string format_info;
-
-		static constexpr char headers[] =
-			"-------------------------------------------------------------------------------------------------------\n"
-			"    Time-stamp    | Value-Loss(MSE) | Policy-Loss(CCE) | Policy-Accuracy | No. of samples | Time taken \n"
-			"-------------------------------------------------------------------------------------------------------\n";
- 
-	public:
-
-		result(uint64_t seconds, uint64_t no_of_samples);
-	};
-
 private:
 
 	std::vector<std::thread> threads_;
 	std::atomic<int> idx_;
-	std::atomic<float> err_sum_;
+	std::atomic<float> mse_sum_;
+	std::atomic<float> cce_sum_;
+    std::atomic<float> acc_sum_;
     
-	const dataset& dataset_;
-    parameters params_;
-
-private:
-
-    void run_test();
+	dataset dataset_;
+	parameters params_;
 
 public:
 
-	~tester();
+	summary test();
+
 	tester();
 
 };

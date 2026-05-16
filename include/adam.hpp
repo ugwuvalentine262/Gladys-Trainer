@@ -12,43 +12,40 @@
 #include <string>
 #include <vector>
 
+#include "neural.hpp"
+
 class adam
 {
 
 private:
 
-	parameters& params_;
-	gradients& grad_;
+	float * const params_;
+	float * const grad_;
 
-	std::vector<float> velocity_;
-	std::vector<float> momentum_;
+    float         data_[PARAM_COUNT*4];
 
-	float gamma_pow_;
-	float beta_pow_;
+	float         discounted_beta_;
+	float         discounted_gamma_;
 
-	const float gamma_;
-	const float beta_;
-	const float alpha_;
-	const float eps_;
-
-    const size_t N_;
+	float   const alpha_;
+	float   const beta_;
+	float   const gamma_;
+	float   const epsilon_;
 
 public:
 
-	bool save(const std::string& filename);
-
-	bool load(const std::string& filename);
-
+	bool save() const;
+	bool load();
 	void step();
+    void zero_grad();
 
 	adam(
-			size_t N
-		,   parameters& params
-		,   gradients& grad
-		,   float alpha
-		,   float beta 
-		,   float gamma 
-		,   float epsilon
+			float       * params
+		,   float const * grad
+		,   float const   alpha
+		,   float const   beta 
+		,   float const   gamma 
+		,   float const   epsilon
 	);
 
 };

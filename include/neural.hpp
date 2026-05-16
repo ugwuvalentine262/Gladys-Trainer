@@ -9,42 +9,91 @@
 #ifndef NEURAL_HPP
 #define NEURAL_HPP
 
+#include <array>
+
 #include <logicnn.h>
 #include <logicnn_backprop.h>
 
 #include "board_descriptor.hpp"
+#include "policy.hpp"
 
-using policy_map=std::array<float, 14>;
-using evaluation=float;
-using gradients = std::vector<float>;
-using parameters = std::vector<float>;
+#define EMBEDDING_DIM 8
+#define LAYERS_COUNT 3
 
-class forward_pass 
+#define MATRIX_SIZE (EMBEDDING_DIM*EMBEDDING_DIM)
+#define LAYER_PARAM_SIZE (MATRIX_SIZE * 2 * EDGE_COUNT)
+#define WDL_OUTPUT_DIM 3
+#define EMBEDDING_PARAM_IDX 0
+#define ENCODER_PARAM_IDX (EMBEDDING_DIM*ATTRIBUTE_COUNT)
+#define WDL_PARAM_IDX (ENCODER_PARAM_IDX + LAYER_PARAM_SIZE * LAYERS_COUNT)
+#define WDL_CLASSIFIER_PARAM_IDX (WDL_PARAM_IDX + LAYER_PARAM_SIZE)
+#define POLICY_PARAM_IDX (WDL_CLASSIFIER_PARAM_IDX + EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
+#define POLICY_CLASSIFIER_PARAM_IDX (WDL_CLASSIFIER_PARAM_IDX + LAYER_PARAM_SIZE)
+#define PARAM_COUNT (POLICY_CLASSIFIER_PARAM_IDX + 0)
+
+using value=float;
+using gradients = float[PARAM_COUNT];
+using parameters = float[PARAM_COUNT];
+
+struct neural_output
 {
-    friend class backward_pass;
-
-private: 
-
-	nn_msg_pass_t mp_[4];
-
-	const parameters& params_;
+	const logits logits;
+	const value value;
 
 public:
 
-	forward_pass(const parameters& prams);
+	neural_output(const value v, const logits& p);
+
+};
+
+class forward_pass 
+{
+	friend class backward_pass;
+
+private: 
+
+	nn_embedding_t emb_;
+
+	nn_msg_pass_t mp_[LAYERS_COUNT];
+
+	nn_msg_pass_t wdl_;
+	nn_msg_pass_t value_;
+
+	const float *wdl_classifier_;
+	const float *value_classifier_;
+
+	std::vector<float> wdl_temp_;
+	std::vector<float> value_temp_;
+	std::vector<float> mp_temp_[LAYERS_COUNT];
+
+public:
+
+	neural_output operator()(const board_descriptor& brd);
+
+	forward_pass(const float prams[]);
+
 };
 
 class backward_pass
 {
 
 private:
+
 	const forward_pass& fp_;
 
-    gradients& grad_;
+	nn_msg_pass_backprop_t mp_[LAYERS_COUNT];
+
+	nn_msg_pass_backprop_t wdl_;
+	nn_msg_pass_backprop_t value_;
+
+    std::vector<float>  temp_;
 
 public:
 
-	backward_pass(const forward_pass& fp, gradients& grad);
+	void operator()(const neural_output& dEdy, float grad[]);
+
+	backward_pass(const forward_pass& fp);
+
 };
 
 #endif // NEURAL_HPP

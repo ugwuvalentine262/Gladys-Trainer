@@ -15,6 +15,7 @@
 #include <array>
 
 #include "board_descriptor.hpp"
+#include "policy.hpp"
 #include "neural.hpp"
 
 class sample
@@ -24,13 +25,12 @@ private:
 
 	const board brd_;
 	const move best_move_;
-	const float eval_;
+	const value eval_;
 
 public:
 
-	board_descriptor encoder_input();
-	policy_map policy_target();
-	evaluation value_target();
+	board_descriptor input();
+	neural_output output();
 
 	sample(std::ifstream& ifs);
 };
@@ -46,7 +46,7 @@ private:
 
 public:
 
-	dataset(const std::string& filename);
+	dataset();
 
 };
 

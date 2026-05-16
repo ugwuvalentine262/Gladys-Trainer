@@ -12,59 +12,35 @@
 #include <string>
 #include <chrono>
 #include <cstdint>
-#include <iostream>
 
 #include "adam.hpp"
 #include "propagator.hpp"
 #include "dataset.hpp"
 #include "neural.hpp"
+#include "summary.hpp"
+#include "adam.hpp"
 
 class trainer
 {
 	using propagators=std::vector<propagator>;
 
-public:
-
-	struct epoch_result 
-	{
-		const uint64_t no_of_samples;
-		const uint64_t seconds;
-		const float cce_loss;
-		const float mse_loss;
-		const float accuracy;
-
-		const std::string format_info;
-
-		static constexpr char headers[] =
-			"---------------------------------------------------------------------------------------------------------\n"
-			"     Time-stamp     | Value-Loss(MSE) | Policy-Loss(CCE) | Policy-Accuracy | No. of samples | Time taken \n"
-			"---------------------------------------------------------------------------------------------------------\n";
- 
-	public:
-
-		epoch_result(uint64_t _seconds, uint64_t _minutes);
-
-	};
-
 private:
 
-	parameters& params_;
+	parameters params_;
+	gradients grad_;
+	float xgrad_[BATCH_SIZE][PARAM_COUNT + CACHE_LINE];
 	propagators props_;
-	training_samples& dataset_;
-
-private:
-
-	void shuffle();
+	dataset dataset_;
+	adam adam_;
+	std::atomic<float> mse_sum_;
+	std::atomic<float> cce_sum_;
+	std::atomic<float> acc_sum_;
 
 public:
 
-	void one_epoch();
+	summary train();
 
-	trainer(
-			size_t N
-		,   training_samples& dataset
-		,   parameters& params
-    );
+	trainer();
 
 };
 
