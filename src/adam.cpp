@@ -141,12 +141,12 @@ void adam::step()
 }
 
 adam::adam(
-			float * const params
-		,   float * const grad
-		,   float   const alpha
-		,   float   const beta 
-		,   float   const gamma 
-		,   float   const epsilon
+			float * params
+		,   float * grad
+		,   float   alpha
+		,   float   beta
+		,   float   gamma
+		,   float   epsilon
 	)   
 		:   params_(params)
 		,   grad_(grad)

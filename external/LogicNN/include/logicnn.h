@@ -138,10 +138,10 @@ struct nn_attributes_t
 
 struct nn_embedding_t
 {
-    nn_accumulate_t         accumulate;
-    nn_float_t      * const data;
-    nn_uint_t         const attribute_count;
-    nn_uint_t         const dim;
+    nn_accumulate_t               accumulate;
+    nn_float_t      const * const data;
+    nn_uint_t               const attribute_count;
+    nn_uint_t               const dim;
 };
 
 extern nn_void_t nn_zero_attributes(nn_attributes_t[], nn_uint_t count);

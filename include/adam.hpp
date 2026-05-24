@@ -40,12 +40,12 @@ public:
     void zero_grad();
 
 	adam(
-			float       * params
-		,   float const * grad
-		,   float const   alpha
-		,   float const   beta 
-		,   float const   gamma 
-		,   float const   epsilon
+			float * params
+		,   float * grad
+		,   float   alpha=0.001
+		,   float   beta=0.9
+		,   float   gamma=0.999
+		,   float   epsilon=1e-8
 	);
 
 };

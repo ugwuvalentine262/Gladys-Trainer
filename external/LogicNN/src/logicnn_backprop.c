@@ -122,7 +122,7 @@ nn_void_t nn_softmax_backprop(
     
     for (nn_uint_t i=0; i < dim; i++)
     {
-        dot += y[i] * dEdxy[i];;
+        dot += y[i] * dEdxy[i];
     }
 
     for (nn_uint_t i=0; i<dim; i++) 
@@ -291,7 +291,7 @@ static nn_void_t nn_msg_aggregator_backprop
     mpbp->softmax(
             dLda
         ,   a
-        ,   d
+        ,   N
     );
 
     mp->matmat_mult(

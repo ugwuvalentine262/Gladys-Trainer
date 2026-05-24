@@ -9,6 +9,7 @@
 #ifndef NEURAL_HPP
 #define NEURAL_HPP
 
+#include <vector>
 #include <array>
 
 #include <logicnn.h>
@@ -30,6 +31,7 @@
 #define POLICY_PARAM_IDX (WDL_CLASSIFIER_PARAM_IDX + EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
 #define POLICY_CLASSIFIER_PARAM_IDX (WDL_CLASSIFIER_PARAM_IDX + LAYER_PARAM_SIZE)
 #define PARAM_COUNT (POLICY_CLASSIFIER_PARAM_IDX + 0)
+#define ATTENTION_OFFSET (MATRIX_SIZE * EDGE_COUNT)
 
 using value=float;
 using gradients = float[PARAM_COUNT];
@@ -37,16 +39,16 @@ using parameters = float[PARAM_COUNT];
 
 struct neural_output
 {
-	const logits logits;
-	const value value;
+	const logits z;
+	const value v;
 
 public:
 
-	neural_output(const value v, const logits& p);
+	neural_output(const value v, const logits& z);
 
 };
 
-class forward_pass 
+class forward_pass
 {
 	friend class backward_pass;
 
@@ -57,13 +59,13 @@ private:
 	nn_msg_pass_t mp_[LAYERS_COUNT];
 
 	nn_msg_pass_t wdl_;
-	nn_msg_pass_t value_;
+	nn_msg_pass_t policy_;
 
 	const float *wdl_classifier_;
-	const float *value_classifier_;
+	const float *policy_classifier_;
 
 	std::vector<float> wdl_temp_;
-	std::vector<float> value_temp_;
+	std::vector<float> policy_temp_;
 	std::vector<float> mp_temp_[LAYERS_COUNT];
 
 public:
@@ -81,12 +83,12 @@ private:
 
 	const forward_pass& fp_;
 
-	nn_msg_pass_backprop_t mp_[LAYERS_COUNT];
+	nn_msg_pass_backprop_t mp_;
 
 	nn_msg_pass_backprop_t wdl_;
 	nn_msg_pass_backprop_t value_;
 
-    std::vector<float>  temp_;
+    std::vector<float> temp_;
 
 public:
 
