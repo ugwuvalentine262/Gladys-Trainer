@@ -9,6 +9,8 @@
 #include <string.h>
 #include <logicnn_backprop.h>
 
+#include "defs.h"
+
 static inline nn_void_t nn_package_node_inverse
     (
             nn_node_t  const * const node
@@ -259,7 +261,7 @@ static nn_void_t nn_msg_aggregator_backprop
     nn_float_t const *nE= X + i * d;
     nn_float_t const *K= messages + idx;
     nn_float_t const *M= K + d * N;
-    nn_float_t const *e= M + d * N;
+    nn_float_t const *e= M + d * N + d;
     nn_float_t const *a= e;
 
     nn_float_t const *dLdy = dEdy + i * d;
@@ -346,8 +348,8 @@ nn_void_t nn_msg_pass_backprop(
     nn_uint_t nC =gn->node_count;
     nn_uint_t d = mp->dim;
     nn_uint_t *indices=(nn_uint_t*)(data);
-    nn_float_t *msgmap=(nn_float_t*)(indices + nC + eC);
-    nn_float_t *tmp=(nn_float_t*)(temp);
+    nn_float_t *msgmap=MAKE_ALIGNED(indices + nC + eC, nn_float_t *);
+    nn_float_t *tmp=MAKE_ALIGNED(temp, nn_float_t*);
 
     memset(dEdA, 0x00u, sizeof(nn_float_t) * d * d * eC);
     memset(dEdW, 0x00u, sizeof(nn_float_t) * d * d * eC);

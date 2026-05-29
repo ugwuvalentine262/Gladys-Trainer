@@ -11,20 +11,7 @@
 #include <math.h>
 #include <logicnn.h>
 
-#ifdef LNN_USE_PADDING
-    #if defined(LNN_CACHELINE_SIZE)
-        #if CACHELINE < 0
-            #error "LNN_CACHELINE_SIZE must be positive"
-        #elif (LNN_CACHELINE_SIZE & (LNN_CACHELINE_SIZE - 1)) != 0
-            #error "LNN_CACHELINE_SIZE must be a power of 2"
-        #endif
-        #define CACHELINE LNN_CACHELINE_SIZE
-    #else
-        #define CACHELINE 0
-    #endif
-#else
-    #define CACHELINE 0
-#endif
+#include "defs.h"
 
 static inline nn_void_t nn_package_node 
     (
@@ -223,9 +210,9 @@ nn_void_t nn_msg_aggregator(
 
     nn_float_t *K= temp;
     nn_float_t *M= K + d * N;
-    nn_float_t *e= M + d * N;
+    nn_float_t *y= M + d * N;
+    nn_float_t *e= y + d;
     nn_float_t *a= e;
-    nn_float_t *y= a + N;
 
     nn_package_node(
             node
@@ -275,8 +262,8 @@ nn_void_t nn_msg_computer(
     nn_uint_t d=mp->dim;
 
     nn_float_t *yA=temp;
-    nn_float_t *yW=yA + D * d;
-    nn_float_t *x=yW + D * d;
+    nn_float_t *yW=yA + d * D;
+    nn_float_t *x=yW + d * D;
 
     nn_float_t const *pA=mp->attention + d * d * i;
     nn_float_t const *pW=mp->weights + d * d * i;
@@ -319,7 +306,7 @@ nn_void_t nn_msg_pass(
     nn_uint_t nC =gn->node_count;
     nn_uint_t d = mp->dim;
     nn_uint_t *indices=(nn_uint_t*)(temp);
-    nn_float_t *msgmap=(nn_float_t*)(indices + eC + nC);
+    nn_float_t *msgmap=MAKE_ALIGNED(indices + eC + nC, nn_float_t *);
     nn_float_t *tmp=msgmap;
 
     for (nn_uint_t i=0; i < eC; i++)
@@ -341,7 +328,8 @@ nn_void_t nn_msg_pass(
             ,   tmp
         );
 
-        tmp += CACHELINE + D * d * 3;
+        tmp += D * d * 3;
+        tmp = MAKE_ALIGNED(tmp, nn_float_t *);
     }
 
     for (nn_uint_t i=0; i < nC; i++)
@@ -365,14 +353,15 @@ nn_void_t nn_msg_pass(
             ,   tmp
         );
 
-        tmp += CACHELINE + N * (2 * d + 1) + d;
+        tmp += N * (2 * d + 1) + d;
+        tmp = MAKE_ALIGNED(tmp, nn_float_t *);
     }
 
     for (nn_uint_t i=0; i < nC; i++)
     {
         memcpy(
                 y + i * d
-            ,   msgmap + indices[i+eC] + gn->nodes[i].relations_count * (2*d + 1)
+            ,   msgmap + indices[i+eC] + gn->nodes[i].relations_count * 2 * d
             ,   d * sizeof(nn_float_t)
         );
     }
@@ -404,17 +393,21 @@ nn_uint_t nn_required_bytes(
         ,   nn_graphnet_t const * const gn
     )
 {
-    nn_uint_t count=sizeof(nn_uint_t) * (gn->edge_count + gn->node_count);
+    nn_uint_t count=63 + sizeof(nn_uint_t) * (gn->edge_count + gn->node_count);
+
+    count = MAKE_ALIGNED(count, nn_uint_t);
 
     for (nn_uint_t i=0; i < gn->edge_count; i++) {
         if (gn->edges[i].pairs_count) {
-            count += CACHELINE + sizeof(nn_float_t) * gn->edges[i].pairs_count * mp->dim * 3;
+            count += sizeof(nn_float_t) * gn->edges[i].pairs_count * mp->dim * 3;
+            count = MAKE_ALIGNED(count, nn_uint_t);
         }
     }
 
     for (nn_uint_t i=0; i < gn->node_count; i++) {
         if (gn->nodes[i].relations_count) {
-            count += CACHELINE + sizeof(nn_float_t) * (gn->nodes[i].relations_count * (2 * mp->dim + 1) + mp->dim);
+            count += sizeof(nn_float_t) * (gn->nodes[i].relations_count * (2 * mp->dim + 1) + mp->dim);
+            count = MAKE_ALIGNED(count, nn_uint_t);
         }
     }
 

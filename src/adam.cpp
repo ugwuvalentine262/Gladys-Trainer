@@ -7,42 +7,12 @@
  */
 
 #include <string>
-#include <Eigen/Dense>
-#include <fstream>
 #include <cstring>
+#include <Eigen/Dense>
+
+#include <io.hpp>
 #include <adam.hpp>
 
-static inline write(std::ofstream& file, const float data[], size_t N)
-{
-	file.write(reinterpret_cast<const char*>(data), sizeof(float) * N);
-}
-
-static inline read(std::ifstream& file, float data[], size_t N)
-{
-	file.read(reinterpret_cast<char*>(data), sizeof(float) * N);
-}
-
-static inline bool is_little_endian()
-{
-	uint16_t value = 0x0001U;
-	return *reinterpret_cast<uint8_t*>(&value) == 1;
-}
-
-static inline float reverse_bytes(float f)
-{
-	uint32_t bits;
-
-	std::memcpy(&bits, &f, sizeof(bits));
-
-	bits =  ((bits & 0x000000FFu) << 24) |
-			((bits & 0x0000FF00u) << 8)  |
-			((bits & 0x00FF0000u) >> 8)  |
-			((bits & 0xFF000000u) >> 24);
-
-	std::memcpy(&f, &bits, sizeof(bits));
-
-	return f;
-}
 
 bool adam::save() const
 {
@@ -52,26 +22,10 @@ bool adam::save() const
 		return false;
 	}
 
-	if (is_little_endian()) 
-	{
- 		write(file, data_, PARAM_COUNT * 2);
- 		write(file, &discounted_gamma_, 1);
- 		write(file, &discounted_beta_, 1);
-	}
- 	else
- 	{
- 		for (int i=0; i < PARAM_COUNT * 2; i++)
- 		{
- 			float f = reverse_bytes(data_[i]);
- 			write(file, &f, 1);
- 		}
-
- 		float g = reverse_bytes(discounted_gamma_);
- 		float b = reverse_bytes(discounted_beta_);
-
- 		write(file, &g, 1);
- 		write(file, &b, 1);
-	}
+	write(file, momentum_, PARAM_COUNT);
+	write(file, velocity_, PARAM_COUNT);
+	write(file, &discounted_gamma_, 1);
+	write(file, &discounted_beta_, 1);
 
 	return true;
 }
@@ -84,22 +38,18 @@ bool adam::load()
 		return false;
 	}
 
-    read(file, data_, PARAM_COUNT * 2);
- 	read(file, &discounted_gamma_, 1);
- 	read(file, &discounted_beta_, 1);
-
- 	if (!is_little_endian())
-	{
- 		for (int i=0; i < PARAM_COUNT * 2; i++)
- 		{
- 			data_[i] = reverse_bytes(data_[i]);
- 		}
-
- 		discounted_gamma_ = reverse_bytes(discounted_gamma_);
- 		discounted_beta_ = reverse_bytes(discounted_beta_);
-	}
+	read(file, momentum_, PARAM_COUNT);
+	read(file, velocity_, PARAM_COUNT);
+	read(file, &discounted_gamma_, 1);
+	read(file, &discounted_beta_, 1);
 
 	return !file.eof();
+}
+
+void adam::reset()
+{
+	std::memset((void*)momentum_, 0x0, sizeof(float) * PARAM_COUNT);
+	std::memset((void*)velocity_, 0x0, sizeof(float) * PARAM_COUNT);
 }
 
 void adam::zero_grad()
@@ -109,10 +59,10 @@ void adam::zero_grad()
 
 void adam::step()
 {
-	Eigen::Map<Eigen::VectorXf> momentum(data_+PARAM_COUNT*0, PARAM_COUNT);
-	Eigen::Map<Eigen::VectorXf> velocity(data_+PARAM_COUNT*1, PARAM_COUNT);
-	Eigen::Map<Eigen::VectorXf> temp1(data_+PARAM_COUNT*2, PARAM_COUNT);
-	Eigen::Map<Eigen::VectorXf> temp2(data_+PARAM_COUNT*3, PARAM_COUNT);
+	Eigen::Map<Eigen::VectorXf> momentum(momentum_, PARAM_COUNT);
+	Eigen::Map<Eigen::VectorXf> velocity(velocity_, PARAM_COUNT);
+	Eigen::Map<Eigen::VectorXf> temp1(temp1_, PARAM_COUNT);
+	Eigen::Map<Eigen::VectorXf> temp2(temp2_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> params(params_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> grad(grad_, PARAM_COUNT);
 
@@ -141,16 +91,19 @@ void adam::step()
 }
 
 adam::adam(
-			float * params
-		,   float * grad
-		,   float   alpha
-		,   float   beta
-		,   float   gamma
-		,   float   epsilon
-	)   
+			float params[]
+		,   float grad[]
+		,   float alpha
+		,   float beta
+		,   float gamma
+		,   float epsilon
+	)
 		:   params_(params)
 		,   grad_(grad)
-		,   data_ {}
+		,   momentum_ {}
+		,   velocity_ {}
+		,   temp1_ {}
+		,   temp2_ {}
 		,   discounted_beta_(beta)
 		,   discounted_gamma_(gamma)
 		,   alpha_(alpha)

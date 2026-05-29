@@ -9,15 +9,14 @@
 #ifndef TRAINER_HPP
 #define TRAINER_HPP
 
+#include <fstream>
 #include <string>
-#include <chrono>
-#include <cstdint>
+#include <vector>
 
 #include "adam.hpp"
 #include "propagator.hpp"
 #include "dataset.hpp"
 #include "neural.hpp"
-#include "summary.hpp"
 #include "adam.hpp"
 
 class trainer
@@ -26,21 +25,31 @@ class trainer
 
 private:
 
+	std::ofstream& log_;
 	parameters params_;
 	gradients grad_;
-	float xgrad_[BATCH_SIZE][PARAM_COUNT + CACHE_LINE];
+	std::vector<alignas(32) float[PARAM_COUNT]> xgrad_;
 	propagators props_;
 	dataset dataset_;
 	adam adam_;
+	const size_t batch_size_;
+
+	std::atomic<size_t>& it_;
 	std::atomic<float> mse_sum_;
 	std::atomic<float> cce_sum_;
 	std::atomic<float> acc_sum_;
+	std::mutex mtx_;
+	std::condition_variable cv_;
+	batch batch_;
+	bool stop_;
 
 public:
 
-	summary train();
+	void train();
 
-	trainer();
+	~trainer();
+
+	trainer(size_t workers, size_t batch_size, float alpha);
 
 };
 

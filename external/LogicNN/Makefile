@@ -4,12 +4,23 @@ AR := ar
 BUILD_DIR := build
 LIB_DIR := lib
 
-override CFLAGS := -Werror -Wextra -Wall -std=c17 -I./include
+ALIGN ?= OFF # enforces alignment on temporary buffers
+CACHELINE := 64
+
+ifeq ($(ALIGN), TRUE)
+override CFLAGS := -DLNN_ALIGN
+else ifeq ($(ALIGN), ON)
+override CFLAGS := -DLNN_ALIGN
+endif
+
+override CFLAGS += -DLNN_CACHELINE=$(CACHELINE) -Werror -Wextra -Wall -std=c17 -I./include
 override DEBUG_FLAGS := $(CFLAGS) -g -O0 -DDEBUG
 override RELEASE_FLAGS := $(CFLAGS) -O2 -O3 -DNDEBUG
 override ASAN_FLAGS := $(CFLAGS) -fsanitize=address -g -O0 -DDEBUG
 
 all: release debug asan
+
+build: all
 
 release: $(LIB_DIR)/release/liblogicnn.a $(LIB_DIR)/release/liblogicnn_backprop.a
 	@echo Finished building Logic Neural Network library in release mode! 
@@ -74,4 +85,4 @@ $(BUILD_DIR)/asan/logicnn_backprop.o: ./src/logicnn_backprop.c ./include/logicnn
 	@$(CC) $(ASAN_FLAGS) -c $< -o $@
 
 .PRECIOUS: $(BUILD_DIR)/release/%.o $(BUILD_DIR)/debug/%.o $(BUILD_DIR)/asan/%.o
-.PHONY: all clean release debug asan
+.PHONY: all clean release debug asan build

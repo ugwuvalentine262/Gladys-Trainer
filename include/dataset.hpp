@@ -32,12 +32,26 @@ public:
 	board_descriptor input();
 	neural_output output();
 
-	sample(std::ifstream& ifs);
+	sample(std::ifstream& file);
+
 };
 
-using training_samples=std::vector<const sample*>;
+struct input_data 
+{
+	const sample& sample;
+	float * const grad;
 
-class dataset : public training_samples
+public:
+
+	input_data(const sample&, float[]);
+
+};
+
+using batch=std::queue<input_data>;
+
+using samples=std::vector<const sample*>;
+
+class dataset : public samples
 {
 
 private:
@@ -46,7 +60,7 @@ private:
 
 public:
 
-	dataset();
+	dataset(const char directory[]);
 
 };
 

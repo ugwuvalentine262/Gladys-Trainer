@@ -16,7 +16,7 @@ void propagator::iterator()
 		std::unique_lock<std::mutex> lock(mtx_);
 
 		cv_.wait(lock, [this]() {
-		    return stop_ || !batch_.empty();
+			return stop_ || !batch_.empty();
 		});
 
 		if (batch_.empty()) 
@@ -29,6 +29,7 @@ void propagator::iterator()
 
 		data_.pop();
 		lock.unlock();
+		cv_.notify_one();
 
 		auto x = data_.sample.input();
 		auto y = data_.sample.output();
@@ -45,7 +46,6 @@ void propagator::iterator()
 		bpass_(delta, data_.grad);
 
 		it_++;
-		cv_.notify_one();
 	}
 }
 

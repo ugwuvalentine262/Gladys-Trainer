@@ -26,25 +26,11 @@
 class propagator
 {
 
-public:
-
-	struct input_data 
-	{
-		const sample& sample;
-		float * const grad;
-
-	public:
-
-		input_data(const sample&, float[]);
-	};
-
-	using batch=std::queue<input_data>;
-
 private:
 
 	const float * params_;
 
-    std::atomic<size_t>& it_;
+	std::atomic<size_t>& it_;
 	std::atomic<float>& mse_sum_;
 	std::atomic<float>& cce_sum_;
 	std::atomic<float>& acc_sum_;

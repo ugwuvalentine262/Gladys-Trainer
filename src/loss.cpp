@@ -6,6 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
+#include <cstring>
 #include <Eigen/Dense>
 
 #include <loss.hpp>
@@ -18,24 +19,21 @@ public:
 
 	static float forward(const logits& z, const policy& y)
 	{
-		float error=0;
+		Eigen::Matrix<float, POLICY_DIM, 1> z_, y_;
 
-		Eigen::Map<const Eigen::VectorXf> z_(z.data(), z.size());
-		Eigen::Map<const Eigen::VectorXf> y_(y.data(), y.size());
+		std::memcpy(z_.data(), z.data(), sizeof(float) * POLICY_DIM);
+		std::memcpy(y_.data(), y.data(), sizeof(float) * POLICY_DIM);
 
 		auto max=z_.maxCoeff();
 
 		y_ = z_.array() - max;
 		y_ = y_.array().exp();
 
-		auto h = max + std::log(y_.sum()); // log-sum-exponent
+		auto h = max + std::log(y_.sum());
 
-		for (auto k=0; k < POLICY_DIMp; k++) 
-		{
-			error += -y[k] * (z[k] - h);
-		}
+		z_.array() -= h;
 
-		return error;
+		return -z_.dot(y_);
 	}
 
 	static logits backward(const logits& z, const policy& y)
@@ -70,12 +68,19 @@ public:
 
 };
 
-value loss::forward(const neural_output& y_hat, const neural_output& y)
+error loss::forward(const neural_output& y_hat, const neural_output& y)
 {
-	
+	return  error(
+					mse::forward(y_hat.v, y.v)
+				,   cce::forward(y_hat.z, y.z)
+				,   accurate(y_hat.z, y.z) ? 1 : 0
+			);
 }
 
 neural_output loss::backward(const neural_output& y_hat, const neural_output& y)
 {
-	
+	return  neural_output(
+					mse::backward(y_hat.v, y.v)
+				,   cce::backward(y_hat.z, y.z)
+			);
 }
