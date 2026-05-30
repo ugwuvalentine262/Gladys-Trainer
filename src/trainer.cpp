@@ -42,11 +42,11 @@ void trainer::train()
 				});
 			}
 
-			Eigen::Map<Eigen::VectorXf> v(grad_, PARAM_COUNT);
+			Eigen::Map<Eigen::VectorXf> v(grad_.data, PARAM_COUNT);
 
-			for (size_t i=0; i < batch_size)
+			for (size_t i=0; i < batch_size_; i++)
 			{
-				Eigen::Map<const Eigen::VectorXf> h(xgrad_.at(i), PARAM_COUNT);
+				Eigen::Map<const Eigen::VectorXf> h(xgrad_.at(i).data, PARAM_COUNT);
 
 				v += h;
 			}
@@ -60,13 +60,13 @@ void trainer::train()
 
 	auto end = std::time(nullptr);
 
-	auto mse_error = mse_sum_.load() / dataset_.sum();
-	auto cce_error = cce_sum_.load() / dataset_.sum();
-	auto accuracy = acc_sum_.load() / dataset_.sum();
+	auto mse_error = mse_sum_.load() / dataset_.size();
+	//auto cce_error = cce_sum_.load() / dataset_.size();
+	//auto accuracy = acc_sum_.load() / dataset_.size();
 
 	size_t seconds = std::difftime(end, start);
 
-	struct { int hr, min, sec } elapsed;
+	struct { int hr, min, sec; } elapsed;
 
 	elapsed.hr = seconds / 3600;
 	elapsed.min = (seconds % 3600) / 60;
@@ -77,13 +77,13 @@ void trainer::train()
 		<< std::setprecision(6)
 		<< " mse: " 
 		<< std::setw(8)
-		<< mse_
-		<< " cce: "
+		<< mse_error
+		/*<< " cce: "
 		<< std::setw(8)
-		<< cce_
+		<< cce_error
 		<< " accuracy: "
 		<< std::setw(8) 
-		<< accuracy_
+		<< accuracy*/
 		<< " elapsed: "
 		<< std::setfill('0')
 		<< std::setw(2)
@@ -116,7 +116,7 @@ trainer::~trainer()
 		exit(EXIT_FAILURE);
 	}
 
-	write(file, params_, PARAM_COUNT);
+	write(file, params_.data, PARAM_COUNT);
 
     adam_.save();
 }
@@ -132,9 +132,9 @@ trainer::trainer(
 		,   grad_ {}
 		,   xgrad_ {}
 		,   props_ {}
-		,   adam_(params_, grad_)
+		,   adam_(params_.data, grad_.data)
 		,   batch_size_(batch_size)
-		,   dataset_(DATASET_DIR)
+		,   dataset_(DATASET_DIR, log)
 		,   it_ {0}
 		,   mse_sum_ {0}
 		,   cce_sum_ {0}
@@ -169,7 +169,7 @@ trainer::trainer(
 	std::ifstream file(NNFILE, std::ios::binary);
 
 	if (file) {
-		read(file, params_, PARAM_COUNT);
+		read(file, params_.data, PARAM_COUNT);
 	}
 
 	if (!file || file.eof())
@@ -182,7 +182,7 @@ trainer::trainer(
 
 		for (int i=0; i < PARAM_COUNT; i++)
 		{
-		params_[i] = dist(gen);
+		    params_.data[i] = dist(gen);
 		}
 	}
 }
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 	auto alpha=0.001f;
 	auto workers=4u;
 
-	std::std::queue<std::string> args(
+	std::queue<std::string> args(
 			std::deque<std::string>(argv + 1, argv + argc)
 		);
 
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	trainer trainer(workers, batch, alpha, logfile);
+	trainer trainer(workers, batch, alpha, log);
 
 	for (auto i=0; i< epochs; i++) 
 	{

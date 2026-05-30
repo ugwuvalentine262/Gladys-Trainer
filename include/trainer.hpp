@@ -28,13 +28,13 @@ private:
 	std::ofstream& log_;
 	parameters params_;
 	gradients grad_;
-	std::vector<alignas(32) float[PARAM_COUNT]> xgrad_;
+	std::vector<gradients> xgrad_;
 	propagators props_;
 	dataset dataset_;
 	adam adam_;
 	const size_t batch_size_;
 
-	std::atomic<size_t>& it_;
+	std::atomic<size_t> it_;
 	std::atomic<float> mse_sum_;
 	std::atomic<float> cce_sum_;
 	std::atomic<float> acc_sum_;
@@ -49,7 +49,12 @@ public:
 
 	~trainer();
 
-	trainer(size_t workers, size_t batch_size, float alpha);
+	trainer(
+            size_t workers
+        ,   size_t batch_size
+        ,   float alpha
+        ,   std::ofstream& file
+    );
 
 };
 

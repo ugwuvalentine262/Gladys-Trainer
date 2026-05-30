@@ -13,6 +13,8 @@
 #include <list>
 #include <fstream>
 #include <array>
+#include <queue>
+#include <string>
 
 #include "board_descriptor.hpp"
 #include "policy.hpp"
@@ -29,17 +31,21 @@ private:
 
 public:
 
-	board_descriptor input();
-	neural_output output();
+	board_descriptor input() const;
+	neural_output output() const;
 
-	sample(std::ifstream& file);
+	sample(
+                const std::string& fen
+            ,   const std::string& eval
+            ,   const std::string& policy
+        );
 
 };
 
 struct input_data 
 {
-	const sample& sample;
-	float * const grad;
+	const sample& sample_;
+	float * const grad_;
 
 public:
 
@@ -60,7 +66,7 @@ private:
 
 public:
 
-	dataset(const char directory[]);
+	dataset(const std::string directory, std::ofstream& log);
 
 };
 

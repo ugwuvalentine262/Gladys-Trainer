@@ -45,7 +45,7 @@ inline void write(std::ofstream& file, const float data[], size_t N)
 		for (size_t i=0; i < N; i++)
 		{
 			float f = reverse_bytes(data[i]);
-			reinterpret_cast<const char*>(&f), sizeof(float));
+			file.write(reinterpret_cast<const char*>(&f), sizeof(float));
 		}
 	}
 }

@@ -9,6 +9,8 @@
 #ifndef BOARD_DESCRIPTOR_HPP
 #define BOARD_DESCRIPTOR_HPP
 
+#include <string>
+
 #include <logicnn.h>
 
 #define EDGE_COUNT 7
@@ -18,13 +20,15 @@
 struct board
 {
 	char mailbox[64];
-	int ep=0;
+	int ep_file=0;
 	bool friend_has_oo;
 	bool friend_has_ooo;
 	bool enemy_has_oo;
 	bool enemy_has_ooo;
 
 public:
+
+    board(const std::string& fen);
 
 };
 
@@ -35,6 +39,7 @@ struct board_descriptor
 
 private:
 
+    const board b;
 	nn_uint16_t attributes_data[NODE_COUNT][ATTRIBUTE_COUNT];
 	nn_relation_t relations[NODE_COUNT][90];
 	nn_pair_t pairs[EDGE_COUNT][90];

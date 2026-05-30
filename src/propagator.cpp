@@ -25,14 +25,14 @@ void propagator::iterator()
 			continue; 
 		}
 
-		auto data = data_.front();
+		auto data = batch_.front();
 
-		data_.pop();
+		batch_.pop();
 		lock.unlock();
 		cv_.notify_one();
 
-		auto x = data_.sample.input();
-		auto y = data_.sample.output();
+		auto x = data.sample_.input();
+		auto y = data.sample_.output();
 
 		auto y_hat = fpass_(x);
 
@@ -43,7 +43,7 @@ void propagator::iterator()
 		cce_sum_ += error.cce;
 		acc_sum_ += error.accuracy;
 
-		bpass_(delta, data_.grad);
+		bpass_(delta, data.grad_);
 
 		it_++;
 	}
@@ -67,6 +67,10 @@ propagator::propagator
 		,   bool& stop
 	)
 		:   params_(params)
+        ,   it_(it)
+        ,   mse_sum_(mse_sum)
+        ,   cce_sum_(cce_sum)
+        ,   acc_sum_(acc_sum)
 		,   thread_(propagator::iterator, this)
 		,   mtx_(mtx)
 		,   cv_(cv)

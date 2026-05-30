@@ -11,17 +11,21 @@
 #include <ctime>
 #include <string>
 
+#include <dataset.hpp>
 #include <tester.hpp>
 #include <io.hpp>
+#include <loss.hpp>
 
 void tester::iterator()
 {
+	forward_pass fpass(params_.data);
+
 	for (;;)
 	{
 		const sample *sample=nullptr;
 
 		{
-			std::lock_guard<std::mutex> lock(mtx);
+			std::lock_guard<std::mutex> lock(mtx_);
 
 			if (stack_.empty()) 
 			{
@@ -38,7 +42,7 @@ void tester::iterator()
 		auto x = sample->input();
 		auto y = sample->output();
 
-		auto y_hat = fpass_(x);
+		auto y_hat = fpass(x);
 
 		auto error = loss::forward(y_hat, y);
 
@@ -50,7 +54,7 @@ void tester::iterator()
 	}
 }
 
-summary tester::test()
+void tester::test()
 {
 	auto start = std::time(nullptr);
 
@@ -65,12 +69,12 @@ summary tester::test()
 	auto end = std::time(nullptr);
 
 	auto mse_error = mse_sum_.load() / dataset_.size();
-	auto cce_error = cce_sum_.load() / dataset_.size();
-	auto accuracy = acc_sum_.load() / dataset_.size();
+	//auto cce_error = cce_sum_.load() / dataset_.size();
+	//auto accuracy = acc_sum_.load() / dataset_.size();
 
 	size_t seconds = std::difftime(end, start);
 
-	struct { int hr, min, sec } elapsed;
+	struct { int hr, min, sec; } elapsed;
 
 	elapsed.hr = seconds / 3600;
 	elapsed.min = (seconds % 3600) / 60;
@@ -81,13 +85,13 @@ summary tester::test()
 		<< std::setprecision(6)
 		<< " mse: " 
 		<< std::setw(8)
-		<< mse_
-		<< " cce: "
+		<< mse_error
+		/*<< " cce: "
 		<< std::setw(8)
-		<< cce_
+		<< cce_error
 		<< " accuracy: "
 		<< std::setw(8) 
-		<< accuracy_
+		<< accuracy*/
 		<< " elapsed: "
 		<< std::setfill('0')
 		<< std::setw(2)
@@ -113,7 +117,7 @@ tester::tester(
 		,   std::ofstream& log
 	)
 		:   log_(log)
-		,   dataset_(DATASET_DIR)
+		,   dataset_(DATASET_DIR, log)
 		,   stack_ {}
 		,   params_ {}
 		,   threads_{}
@@ -138,7 +142,7 @@ tester::tester(
 		exit(EXIT_FAILURE);
 	}
 
-	read(file, params_, PARAM_COUNT);
+	read(file, params_.data, PARAM_COUNT);
 
 	if (file.eof())
 	{
@@ -174,12 +178,12 @@ int main(int argc, char *argv[])
 				workers = std::stoull(value);
 			}
 			catch (const std::invalid_argument& e) {
+
 				log << value << " is not a number\n";
-				continue;
 			}
 			catch (const std::out_of_range& e) {
+                
 				log << value << " is too large\n";
-				continue;
 			}
 		}
 	}

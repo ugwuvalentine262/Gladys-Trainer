@@ -18,8 +18,7 @@
 #include <logicnn.h>
 #include <logicnn_backprop.h>
 
-#include "cce.hpp"
-#include "mse.hpp"
+#include "loss.hpp"
 #include "dataset.hpp"
 #include "neural.hpp"
 

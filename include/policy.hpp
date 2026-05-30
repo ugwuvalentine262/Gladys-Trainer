@@ -20,15 +20,12 @@ struct move
 {
 	int from;
 	int to;
-	int piece;
-	int capt;
 	int promo;
-	bool null;
+
+public:
+
+    move(const std::string& algebra);
 };
-
-size_t policy_map_index(const move& move);
-
-policy softmax(const logits& z);
 
 bool accurate(const logits& z, const policy& y);
 
