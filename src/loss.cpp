@@ -17,12 +17,15 @@ class cce
 
 public:
 
-	static float forward(const logits& z, const policy& y)
+	static float forward(const logits& z, const logits& y)
 	{
-		Eigen::Matrix<float, POLICY_DIM, 1> z_, y_;
+        alignas(16) float _z[128], _y[128];
 
-		std::memcpy(z_.data(), z.data(), sizeof(float) * POLICY_DIM);
-		std::memcpy(y_.data(), y.data(), sizeof(float) * POLICY_DIM);
+        Eigen::Map<Eigen::VectorXf> z_(_z, z.size());
+        Eigen::Map<Eigen::VectorXf> y_(_y, y.size());
+
+		std::memcpy(_z, z.vals_data(), sizeof(float) * z.size());
+		std::memcpy(_y, y.vals_data(), sizeof(float) * y.size());
 
 		auto max=z_.maxCoeff();
 
@@ -36,16 +39,26 @@ public:
 		return -z_.dot(y_);
 	}
 
-	static logits backward(const logits& z, const policy& y)
+	static logits backward(const logits& z, const logits& y)
 	{
-		auto h = softmax(z);
+		alignas(16) float h[128];
 
-		Eigen::Map<Eigen::VectorXf> u(h.data(), h.size());
- 		Eigen::Map<Eigen::VectorXf> v(y.data(), y.size());
+        std::memcpy(h, z.vals_data(), sizeof(float) * z.size());
+
+	    Eigen::Map<Eigen::VectorXf> p(h, z.size());
+
+	    auto max=p.maxCoeff();
+
+	    p = p.array()-max;
+	    p = p.array().exp();
+	    p /= p.sum();
+
+		Eigen::Map<Eigen::VectorXf> u(h, z.size());
+ 		Eigen::Map<const Eigen::VectorXf> v(y.vals_data(), y.size());
 
  		u -= v;
 
-		return h; 
+		return logits(z.moves_data(), h, z.size()); 
 	}
 
 };
@@ -73,7 +86,7 @@ error loss::forward(const neural_output& y_hat, const neural_output& y)
 	return  error(
 					mse::forward(y_hat.v, y.v)
 				,   cce::forward(y_hat.z, y.z)
-				,   accurate(y_hat.z, y.z) ? 1 : 0
+				,   y_hat.z == y.z ? 1 : 0
 			);
 }
 

@@ -91,7 +91,7 @@ static void softmax_backprop(
 
 }
 
-static void softmax
+void softmax
     (
             float          xy[]
         ,   unsigned const dim

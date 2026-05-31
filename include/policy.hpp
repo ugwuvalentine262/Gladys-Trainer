@@ -9,24 +9,83 @@
 #ifndef POLICY_HPP
 #define POLICY_HPP
 
-#include <array>
-
-#define POLICY_DIM 1024
-
-using logits=std::array<float, POLICY_DIM>;
-using policy=std::array<float, POLICY_DIM>;
+#include <string>
 
 struct move
 {
-	int from;
-	int to;
-	int promo;
+    struct bad {};
+
+	int from=-1;
+	int to=-1;
+	int promo=-1;
 
 public:
 
+    move()=default;
     move(const std::string& algebra);
+    move(
+            int _from
+        ,   int _to
+        ,   int _promo
+    );
+
 };
 
-bool accurate(const logits& z, const policy& y);
+class move_t
+{
+    friend class logits;
+    friend class policy;
+
+    const move *m_;
+    const float *v_;
+
+public:
+
+    bool operator<(const move_t&) const;
+    bool operator==(const move_t&) const;
+    const move& m() const;
+    const float& v() const;
+
+};
+
+class logits
+{
+
+protected:
+
+    move_t pairs_[100];
+    move moves_[100];
+    alignas(16) float vals_[128];
+    size_t count_;
+
+public:
+
+    size_t size() const;
+
+    const move *moves_data() const;
+    const float *vals_data() const;
+
+    bool operator==(const logits& logits) const;
+
+    const move_t *begin() const;
+    const move_t *end() const;
+
+    logits();
+    logits(const logits& logits);
+    logits(
+            const move[]
+        ,   const float[]
+        ,   size_t count
+    );
+};
+
+struct policy : public logits
+{
+    struct bad {};
+
+    policy(const std::string& pi);
+    policy(const policy& policy);
+
+};
 
 #endif // POLICY_HPP

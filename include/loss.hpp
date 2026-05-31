@@ -35,6 +35,7 @@ struct loss
 	static error forward(const neural_output& y_hat, const neural_output& y);
 
 	static neural_output backward(const neural_output& y_hat, const neural_output& y);
+
 };
 
 #endif // LOSS_HPP

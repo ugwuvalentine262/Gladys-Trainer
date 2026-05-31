@@ -26,7 +26,7 @@ sample::sample(
     )
         :   brd_(fen)
         ,   best_move_(policy)
-        ,   eval_((2.0 / (1 + std::exp(std::stoi(eval) * -0.004))) - 1)
+        ,   eval_(1.0 / (1 + std::exp(std::stoi(eval) * -0.004)))
 {}
 
 input_data::input_data(const sample& sample, float grad[])

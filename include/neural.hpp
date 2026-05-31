@@ -15,7 +15,7 @@
 #include <logicnn.h>
 #include <logicnn_backprop.h>
 
-#include "board_descriptor.hpp"
+#include "descriptor.hpp"
 #include "policy.hpp"
 
 #define EMBEDDING_DIM 32

@@ -16,7 +16,7 @@
 #include <queue>
 #include <string>
 
-#include "board_descriptor.hpp"
+#include "descriptor.hpp"
 #include "policy.hpp"
 #include "neural.hpp"
 
