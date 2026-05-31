@@ -10,7 +10,7 @@
 #include <string>
 
 #include <neural.hpp>
-#include <board_descriptor.hpp>
+#include <descriptor.hpp>
 
 #define INIT_MESSAGE_PASSER(_a) \
     mp##_a##_ { \
@@ -41,7 +41,11 @@ static void matmat_mult
         ,   unsigned         const out
     )
 {
-    
+    Eigen::Map<const Eigen::MatrixXf> W_(W, out, in);
+    Eigen::Map<const Eigen::MatrixXf> x_(x, in, batch);
+    Eigen::Map<      Eigen::MatrixXf> y_(y, out, batch);
+
+    y_.noalias() = W_ * x_;
 }
 
 static void matTmat_mult
@@ -54,7 +58,11 @@ static void matTmat_mult
         ,   unsigned         const common
     )
 {
-    
+    Eigen::Map<const Eigen::MatrixXf> a(A, common, Acols);
+    Eigen::Map<const Eigen::MatrixXf> b(B, common, Bcols);
+    Eigen::Map<      Eigen::MatrixXf> y(Y, Acols, Bcols);
+
+    y.noalias() = a.transpose() * b;
 }
 
 static void matmatT_mult
@@ -67,7 +75,11 @@ static void matmatT_mult
         ,   unsigned         const common
     )
 {
-    
+    Eigen::Map<const Eigen::MatrixXf> a(A, Arows, common);
+    Eigen::Map<const Eigen::MatrixXf> b(B, Brows, common);
+    Eigen::Map<      Eigen::MatrixXf> y(Y, Arows, Brows);
+
+    y.noalias() = a * b.transpose();
 }
 
 static void vecmat_mult
@@ -79,7 +91,11 @@ static void vecmat_mult
         ,   unsigned const         out
     )
 {
-    
+    Eigen::Map<const Eigen::RowVectorXf> v_(v, in);
+    Eigen::Map<const Eigen::MatrixXf> W_(W, in, out);
+    Eigen::Map<      Eigen::RowVectorXf> y_(y, out);
+
+    y_.noalias() = v_ * W_;
 }
 
 static void softmax_backprop(
@@ -88,7 +104,13 @@ static void softmax_backprop(
         ,   unsigned  const dim
     )
 {
+    Eigen::Map<const Eigen::VectorXf> y_(y, dim);
+    Eigen::Map<      Eigen::VectorXf> dxy(dEdxy, dim);
 
+    auto dot= y_.dot(dxy);
+
+    dxy.array() -= dot;
+    dxy *= y_;
 }
 
 void softmax
@@ -120,34 +142,45 @@ static void accumulate
     v += h;
 }
 
-neural_output::neural_output(const value _v, const logits& _z)
-    :   v(_v)
-    ,   z(_z)
+neural_output::neural_output
+    (
+            const value _v
+        ,   const logits& _z
+    )
+        :   v(_v)
+        ,   z(_z)
 {}
 
-neural_output::neural_output(const value _v, const move&)
-    :   v(_v)
-    ,   z{}
+neural_output::neural_output
+    (
+            const value _v
+        ,   const move&
+    )
+        :   v(_v)
+        ,   z{}
 {}
 
-neural_output::neural_output(const value _v)
-    :   v(_v)
-    ,   z{}
-{}
-
-neural_output forward_pass::operator()(const board_descriptor& d)
+neural_output forward_pass::operator()(const descriptor& d)
 {
-    brd_=&d;
+    d_=&d;
+
+    logits p;
 
     alignas(16) float Y[NODE_COUNT][EMBEDDING_DIM];
-    alignas(16) float y_wdl[3];
+
+    Eigen::Map<
+            const Eigen::Matrix<float, 3, EMBEDDING_DIM * 2, Eigen::RowMajor>
+        > WDL(wdl_);
+
+    Eigen::Map<const Eigen::Matrix<float, EMBEDDING_DIM * 2, 1>> x(Xwdl);
+    Eigen::Map<Eigen::Vector3f> y(y_wdl);
 
     Eigen::Map<Eigen::VectorXf> friends(Xwdl, EMBEDDING_DIM);
     Eigen::Map<Eigen::VectorXf> enemies(Xwdl+EMBEDDING_DIM, EMBEDDING_DIM);
 
-    float& win=y_wdl[0];
-    float& draw=y_wdl[1];
-    float& loss=y_wdl[2];
+    auto& win=y[0];
+    auto& draw=y[1];
+    auto& loss=y[2];
 
     nn_embedding(
             &emb_
@@ -158,10 +191,15 @@ neural_output forward_pass::operator()(const board_descriptor& d)
 
     auto required = nn_required_bytes(&mp1_, &d.graphnet);
 
-    MESSAGE_PASSING(1 );
-    MESSAGE_PASSING(2 );
-    MESSAGE_PASSING(3 );
-    MESSAGE_PASSING(4a);
+    MESSAGE_PASSING(1);
+    MESSAGE_PASSING(2);
+    MESSAGE_PASSING(3);
+
+    mp4a_temp_.resize(required);
+    //mp4b_temp_.resize(required);
+    std::memcpy(X4a[0], Y, sizeof(Y));
+    //std::memcpy(X4b[0], Y, sizeof(Y));
+    nn_msg_pass(&mp4a_, &d.graphnet, X4a[0], Y[0], mp4a_temp_.data());
 
     friends.setConstant(-9e10);
     enemies.setConstant(-9e10);
@@ -183,14 +221,12 @@ neural_output forward_pass::operator()(const board_descriptor& d)
         }
     }
 
-    nn_matmat_mult(
-            wdl_
-        ,   Xwdl
-        ,   y_wdl
-        ,   1
-        ,   EMBEDDING_DIM
-        ,   3
-    );
+    //nn_msg_pass(&mp4b_, &d.graphnet, X4b[0], Y[0], mp4b_temp_.data());
+    y.noalias() = WDL * x;
+
+    win += wdl_b_[0];
+    draw += wdl_b_[1];
+    loss += wdl_b_[2];
 
     auto max = std::max(win, std::max(draw, loss));
 
@@ -204,7 +240,7 @@ neural_output forward_pass::operator()(const board_descriptor& d)
     draw /= sum;
     loss /= sum;
 
-    return neural_output(win - loss);
+    return neural_output(win - loss, p);
 }
 
 forward_pass::forward_pass(const float params[])
@@ -229,7 +265,7 @@ forward_pass::forward_pass(const float params[])
     ,   X4b {}
     ,   k {}
     ,   Xwdl {}
-    ,   brd_(0)
+    ,   d_(0)
     ,   mp1_temp_ {}
     ,   mp2_temp_ {}
     ,   mp3_temp_ {}
@@ -239,7 +275,46 @@ forward_pass::forward_pass(const float params[])
 
 void backward_pass::operator()(const neural_output& dEdy, float grad[])
 {
+    alignas(16) float dy[3] = {dEdy.v, 0, -dEdy.v};
+    alignas(16) float dy_mp[EMBEDDING_DIM * 2];
 
+    float *friends = dy_mp;
+    float *enemies = dy_mp + EMBEDDING_DIM;
+
+    auto dot = dy[0] * fpass_.y_wdl[0]
+            +  dy[2] * fpass_.y_wdl[2];
+
+    dy[0] = fpass_.y_wdl[0] * (dy[0] - dot);
+    dy[1] = fpass_.y_wdl[1] * (dy[1] - dot);
+    dy[2] = fpass_.y_wdl[2] * (dy[2] - dot);
+
+    grad[WDL_BIAS_OFFSET+0] = dy[0];
+    grad[WDL_BIAS_OFFSET+1] = dy[1];
+    grad[WDL_BIAS_OFFSET+2] = dy[2];
+
+    Eigen::Map<const Eigen::Vector3f> dy_(dy);
+
+    Eigen::Map<
+            const Eigen::Matrix<float, 1, EMBEDDING_DIM * 2>
+        > x(fpass_.Xwdl);
+
+    Eigen::Map<
+            const Eigen::Matrix<float, 3, EMBEDDING_DIM * 2, Eigen::RowMajor>
+        > dWDL(grad + WDL_PARAM_OFFSET);
+
+    dWDL.noalias() = dy_ * x;
+
+    matmat_mult
+    (
+            fpass_.wdl_
+        ,   dy
+        ,   dy_mp
+        ,   1
+        ,   3
+        ,   2 * EMBEDDING_DIM
+    );
+
+    temp_.resize(fpass_.mp1_temp_.size());
 }
 
 backward_pass::backward_pass(const forward_pass& fpass)

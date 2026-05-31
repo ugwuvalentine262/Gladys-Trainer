@@ -31,7 +31,7 @@ private:
 
 public:
 
-	board_descriptor input() const;
+	descriptor input() const;
 	neural_output output() const;
 
 	sample(

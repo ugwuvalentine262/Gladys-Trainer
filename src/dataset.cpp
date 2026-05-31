@@ -9,7 +9,7 @@
 #include <cmath>
 #include <dataset.hpp>
 
-board_descriptor sample::input() const
+descriptor sample::input() const
 {
     return brd_;
 }

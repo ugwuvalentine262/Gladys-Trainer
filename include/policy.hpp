@@ -83,6 +83,7 @@ struct policy : public logits
 {
     struct bad {};
 
+    policy()=default;
     policy(const std::string& pi);
     policy(const policy& policy);
 

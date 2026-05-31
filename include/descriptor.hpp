@@ -32,7 +32,7 @@ public:
 
 };
 
-struct board_descriptor
+struct descriptor
 {
     friend class backward_pass;
     friend class forward_pass;
@@ -41,7 +41,7 @@ private:
 
     const board b;
 	nn_uint16_t attributes_data[NODE_COUNT][ATTRIBUTE_COUNT];
-	nn_relation_t relations[NODE_COUNT][90];
+	nn_relation_t relations[NODE_COUNT][10];
 	nn_pair_t pairs[EDGE_COUNT][90];
 	nn_edge_t edges[EDGE_COUNT];
 	nn_node_t nodes[NODE_COUNT];
@@ -53,7 +53,7 @@ private:
 
 public:
 
-	board_descriptor(const board& brd);
+	descriptor(const board& brd);
 
 };
 

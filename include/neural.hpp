@@ -30,7 +30,8 @@
 #define LAYER4a_PARAM_OFFSET (LAYER3_PARAM_OFFSET + LAYER_PARAM_SIZE)
 #define LAYER4b_PARAM_OFFSET (LAYER4a_PARAM_OFFSET + LAYER_PARAM_SIZE)
 #define WDL_PARAM_OFFSET (LAYER4b_PARAM_OFFSET + LAYER_PARAM_SIZE)
-#define POLICY_PARAM_OFFSET (WDL_PARAM_OFFSET + EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM + 3)
+#define WDL_BIAS_OFFSET (WDL_PARAM_OFFSET + EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
+#define POLICY_PARAM_OFFSET (WDL_BIAS_OFFSET + 3)
 #define PARAM_COUNT (POLICY_PARAM_OFFSET + 0)
 #define ATTENTION_OFFSET (MATRIX_SIZE * EDGE_COUNT)
 
@@ -52,7 +53,6 @@ public:
 
 	neural_output(const value _v, const logits& _z);
     neural_output(const value _v, const move& _m);
-    neural_output(const value _v);
 
 };
 
@@ -81,8 +81,9 @@ private:
     alignas(16) nn_float_t X4b[NODE_COUNT][EMBEDDING_DIM];
     alignas(16) nn_float_t k[64][EMBEDDING_DIM];
     alignas(16) nn_float_t Xwdl[EMBEDDING_DIM * 2];
+                nn_float_t y_wdl[3];
 
-    const board_descriptor *brd_;
+    const descriptor *d_;
 
 	std::vector<nn_byte_t> mp1_temp_;
 	std::vector<nn_byte_t> mp2_temp_;
@@ -92,7 +93,7 @@ private:
 
 public:
 
-	neural_output operator()(const board_descriptor& brd);
+	neural_output operator()(const descriptor& brd);
 
 	forward_pass(const float params[]);
 

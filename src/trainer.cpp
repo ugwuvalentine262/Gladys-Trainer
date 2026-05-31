@@ -180,10 +180,13 @@ trainer::trainer(
 			<< "parameters of neural network...\n"
 			<< std::endl;
 
+        auto bias=params_.data+WDL_BIAS_OFFSET;
+
 		for (int i=0; i < PARAM_COUNT; i++)
 		{
 		    params_.data[i] = dist(gen);
 		}
+        bias[0]=bias[1]=bias[2]=0;
 	}
 }
 
