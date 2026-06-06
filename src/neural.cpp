@@ -26,6 +26,21 @@
             ,   .edge_count=EDGE_COUNT \
         }
 
+#define MESSAGE_BACKWARD(_a) \
+    nn_msg_pass_backprop ( \
+            &mp_ \
+        ,   &fpass_.mp##_a##_ \
+        ,   &fpass_.d_->graphnet \
+        ,   fpass_.X##_a[0] \
+        ,   dY[0] \
+        ,   dX[0] \
+        ,   grad + LAYER##_a##_PARAM_OFFSET \
+        ,   grad + LAYER##_a##_PARAM_OFFSET + ATTENTION_OFFSET \
+        ,   fpass_.mp##_a##_temp_.data() \
+        ,   temp_.data() \
+    ); \
+    std::memcpy(dY, dX, sizeof(dX)) 
+
 #define MESSAGE_PASSING(_a) \
     mp##_a##_temp_.resize(required); \
     std::memcpy(X##_a[0], Y, sizeof(Y)); \
@@ -144,20 +159,11 @@ static void accumulate
 
 neural_output::neural_output
     (
-            const value _v
+            const value& _v
         ,   const logits& _z
     )
         :   v(_v)
         ,   z(_z)
-{}
-
-neural_output::neural_output
-    (
-            const value _v
-        ,   const move&
-    )
-        :   v(_v)
-        ,   z{}
 {}
 
 neural_output forward_pass::operator()(const descriptor& d)
@@ -201,22 +207,33 @@ neural_output forward_pass::operator()(const descriptor& d)
     //std::memcpy(X4b[0], Y, sizeof(Y));
     nn_msg_pass(&mp4a_, &d.graphnet, X4a[0], Y[0], mp4a_temp_.data());
 
-    friends.setConstant(-9e10);
-    enemies.setConstant(-9e10);
+    friends.setConstant(-9E9);
+    enemies.setConstant(-9e9);
 
-    for (int i=0; i< 64; i++)
+    for (int s=0; s< 64; s++)
     {
-        std::memcpy(k[i], Y[i], sizeof(float) * EMBEDDING_DIM);
-
-        if (d.b.mailbox[i]!=0)
+        if (d.b.mailbox[s]!=0)
         {
-            Eigen::Map<Eigen::VectorXf> h(k[i], EMBEDDING_DIM);
-
-            if (d.b.mailbox[i] & 0x8) {
-                enemies = enemies.cwiseMax(h);
+            if (d.b.mailbox[s] & 0x8) 
+            {
+                for (int i = 0; i < EMBEDDING_DIM; i++)
+                {
+                    if (Y[s][i] > enemies[i])
+                    {
+                        enemies[i] = Y[s][i];
+                        econt_[i] = s;
+                    }
+                }
             }
             else {
-                friends = friends.cwiseMax(h);   
+                for (int i = 0; i < EMBEDDING_DIM; i++)
+                {
+                    if (Y[s][i] > friends[i])
+                    {
+                        friends[i] = Y[s][i];
+                        fcont_[i] = s;
+                    }
+                }
             }
         }
     }
@@ -263,8 +280,9 @@ forward_pass::forward_pass(const float params[])
     ,   X3 {}
     ,   X4a {}
     ,   X4b {}
-    ,   k {}
     ,   Xwdl {}
+    ,   fcont_ {}
+    ,   econt_ {}
     ,   d_(0)
     ,   mp1_temp_ {}
     ,   mp2_temp_ {}
@@ -275,6 +293,8 @@ forward_pass::forward_pass(const float params[])
 
 void backward_pass::operator()(const neural_output& dEdy, float grad[])
 {
+    alignas(16) float dY[NODE_COUNT][EMBEDDING_DIM]={};
+    alignas(16) float dX[NODE_COUNT][EMBEDDING_DIM]={};
     alignas(16) float dy[3] = {dEdy.v, 0, -dEdy.v};
     alignas(16) float dy_mp[EMBEDDING_DIM * 2];
 
@@ -299,7 +319,7 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
         > x(fpass_.Xwdl);
 
     Eigen::Map<
-            const Eigen::Matrix<float, 3, EMBEDDING_DIM * 2, Eigen::RowMajor>
+            Eigen::Matrix<float, 3, EMBEDDING_DIM * 2, Eigen::RowMajor>
         > dWDL(grad + WDL_PARAM_OFFSET);
 
     dWDL.noalias() = dy_ * x;
@@ -314,7 +334,26 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
         ,   2 * EMBEDDING_DIM
     );
 
+    for (int i = 0; i < EMBEDDING_DIM; i++)
+    {
+        dY[fpass_.fcont_[i]][i] = friends[i];
+        dY[fpass_.econt_[i]][i] = enemies[i];
+    }
+
     temp_.resize(fpass_.mp1_temp_.size());
+
+    MESSAGE_BACKWARD(4a);
+    MESSAGE_BACKWARD(3 );
+    MESSAGE_BACKWARD(2 );
+    MESSAGE_BACKWARD(1 );
+
+    nn_embedding_backprop(
+            &fpass_.emb_
+        ,   fpass_.d_->attributes
+        ,   dY[0]
+        ,   grad + EMBEDDING_PARAM_OFFSET
+        ,   NODE_COUNT
+    );
 }
 
 backward_pass::backward_pass(const forward_pass& fpass)

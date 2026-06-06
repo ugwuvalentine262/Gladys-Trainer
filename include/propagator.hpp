@@ -51,7 +51,7 @@ public:
 	~propagator();
 
 	propagator(
-			const float * params
+			const parameters& params
 		,   std::atomic<size_t>& it
 		,   std::atomic<float>& mse_sum
 		,   std::atomic<float>& cce_sum

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <ctime>
+#include <cstdlib>
 #include <string>
 
 #include <dataset.hpp>
@@ -29,7 +30,7 @@ void tester::iterator()
 
 			if (stack_.empty()) 
 			{
-				if (it_>=dataset_.size())
+				if (static_cast<size_t>(it_)>=dataset_.size())
 				{
 					cv_.notify_one();
 				}
@@ -62,7 +63,7 @@ void tester::test()
 		std::unique_lock<std::mutex> lock(mtx_);
 
 		cv_.wait(lock, [this]() {
-			return it_.load() >= dataset_.size() && stack_.empty();
+			return static_cast<size_t>(it_) >= dataset_.size() && stack_.empty();
 		});
 	}
 
@@ -117,7 +118,7 @@ tester::tester(
 		,   std::ofstream& log
 	)
 		:   log_(log)
-		,   dataset_(DATASET_DIR, log)
+		,   dataset_(log)
 		,   stack_ {}
 		,   params_ {}
 		,   threads_{}
@@ -139,7 +140,7 @@ tester::tester(
 			<< "Unable to open neural network file!" 
 			<< std::endl;
 
-		exit(EXIT_FAILURE);
+		std::exit(EXIT_FAILURE);
 	}
 
 	read(file, params_.data, PARAM_COUNT);
@@ -150,12 +151,12 @@ tester::tester(
 			<< "Unable to read parameters from file!" 
 			<< std::endl;
 
-		exit(EXIT_FAILURE);
+		std::exit(EXIT_FAILURE);
 	}
 
 	for (size_t i=0; i<workers; i++)
 	{
-		threads_.emplace_back(tester::iterator, this);
+		threads_.emplace_back(&tester::iterator, this);
 	}
 }
 

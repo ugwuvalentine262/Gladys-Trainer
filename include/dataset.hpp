@@ -26,7 +26,7 @@ class sample
 private:
 
 	const board brd_;
-	const move best_move_;
+	const policy policy_;
 	const value eval_;
 
 public:
@@ -66,7 +66,9 @@ private:
 
 public:
 
-	dataset(const std::string directory, std::ofstream& log);
+	void shuffle();
+
+	dataset(std::ofstream& log);
 
 };
 

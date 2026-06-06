@@ -16,9 +16,14 @@ move::move(const std::string& algebra)
 {
     auto square = [](char file, char rank)
         {
+            if (   file < 'a' || rank < '1' 
+                || file > 'h' || rank > '8'
+               )
+            {
+                throw move::bad();
+            }
             return (int)(rank - '1') * 8 + (int)(file - 'a');
         };
-
 
     if (algebra.size()!=4 && algebra.size()!=5)
     {
@@ -118,11 +123,11 @@ logits::logits()
     ,   count_(0)
 {}
 
-logits::logits(const logits& logits)
+logits::logits(const logits& Logits)
     :   logits(
-                logits.moves_
-            ,   logits.vals_
-            ,   logits.count_
+                Logits.moves_
+            ,   Logits.vals_
+            ,   Logits.count_
         )
 {}
 

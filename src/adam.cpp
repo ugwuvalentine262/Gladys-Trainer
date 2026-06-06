@@ -13,17 +13,16 @@
 #include <io.hpp>
 #include <adam.hpp>
 
-
 bool adam::save() const
 {
-	std::ofstream file(ADAM_FILE, std::ios::binary);
+	std::ofstream file(ADAMFILE, std::ios::binary);
 
 	if (!file) {
 		return false;
 	}
 
-	write(file, momentum_, PARAM_COUNT);
-	write(file, velocity_, PARAM_COUNT);
+	write(file, momentum_.data, PARAM_COUNT);
+	write(file, velocity_.data, PARAM_COUNT);
 	write(file, &discounted_gamma_, 1);
 	write(file, &discounted_beta_, 1);
 
@@ -32,14 +31,14 @@ bool adam::save() const
 
 bool adam::load()
 {
-	std::ifstream file(ADAM_FILE, std::ios::binary);
+	std::ifstream file(ADAMFILE, std::ios::binary);
 
 	if (!file) {
 		return false;
 	}
 
-	read(file, momentum_, PARAM_COUNT);
-	read(file, velocity_, PARAM_COUNT);
+	read(file, momentum_.data, PARAM_COUNT);
+	read(file, velocity_.data, PARAM_COUNT);
 	read(file, &discounted_gamma_, 1);
 	read(file, &discounted_beta_, 1);
 
@@ -48,8 +47,8 @@ bool adam::load()
 
 void adam::reset()
 {
-	std::memset((void*)momentum_, 0x0, sizeof(float) * PARAM_COUNT);
-	std::memset((void*)velocity_, 0x0, sizeof(float) * PARAM_COUNT);
+	std::memset((void*)momentum_.data, 0x0, sizeof(float) * PARAM_COUNT);
+	std::memset((void*)velocity_.data, 0x0, sizeof(float) * PARAM_COUNT);
 }
 
 void adam::zero_grad()
@@ -59,19 +58,19 @@ void adam::zero_grad()
 
 void adam::step()
 {
-	Eigen::Map<Eigen::VectorXf> momentum(momentum_, PARAM_COUNT);
-	Eigen::Map<Eigen::VectorXf> velocity(velocity_, PARAM_COUNT);
+	Eigen::Map<Eigen::VectorXf> momentum(momentum_.data, PARAM_COUNT);
+	Eigen::Map<Eigen::VectorXf> velocity(velocity_.data, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> temp1(temp1_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> temp2(temp2_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> params(params_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> grad(grad_, PARAM_COUNT);
 
-	temp1.noalias() = beta_ * momentum_;
-	temp2.noalias() = (1 - beta_) * grad_;
+	temp1.noalias() = beta_ * momentum;
+	temp2.noalias() = (1 - beta_) * grad;
 
 	momentum.noalias() = temp1 + temp2;
 
-	temp1.noalias() = gamma_ * velocity_;
+	temp1.noalias() = gamma_ * velocity;
 	temp2.array() = grad.array().square();
 	temp2.array() *= 1 - gamma_;
 

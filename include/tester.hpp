@@ -11,7 +11,7 @@
 
 #include <fstream>
 #include <chrono>
-#include <vector>
+#include <list>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -31,7 +31,7 @@ private:
 	dataset dataset_;
 	std::stack<const sample*> stack_;
 	parameters params_;
-	std::vector<std::thread> threads_;
+	std::list<std::thread> threads_;
 	std::condition_variable cv_;
 	std::mutex mtx_;
 	std::atomic<int> it_;

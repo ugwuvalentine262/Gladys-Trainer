@@ -9,6 +9,8 @@
 #include <Eigen/Dense>
 #include <fstream>
 #include <ctime>
+#include <cmath>
+#include <cstdlib>
 #include <iomanip>
 #include <random>
 #include <string>
@@ -20,6 +22,8 @@
 
 void trainer::train()
 {
+    dataset_.shuffle();
+
 	auto start = std::time(nullptr);
 
 	mse_sum_.store(0, std::memory_order_relaxed);
@@ -28,7 +32,7 @@ void trainer::train()
 
 	for (const auto& sample : dataset_)
 	{
-		batch_.emplace(*sample, xgrad_.at(batch_.size()));
+		batch_.emplace(*sample, xgrad_.at(batch_.size()).data);
 
 		if (batch_.size()==batch_size_)
 		{
@@ -94,6 +98,18 @@ void trainer::train()
 		<< ":"
 		<< std::setw(2)
 		<< elapsed.sec;
+
+    for (const auto& p : params_.data)
+    {
+		if (std::isnan(p) || std::isinf(p))
+        {
+            log_ 
+                 << "Undefined neural network parameters."
+                 << std::endl;
+
+            std::exit(EXIT_FAILURE);
+        }
+    }
 }
 
 trainer::~trainer()
@@ -118,7 +134,7 @@ trainer::~trainer()
 
 	write(file, params_.data, PARAM_COUNT);
 
-    adam_.save();
+	adam_.save();
 }
 
 trainer::trainer(
@@ -132,9 +148,9 @@ trainer::trainer(
 		,   grad_ {}
 		,   xgrad_ {}
 		,   props_ {}
-		,   adam_(params_.data, grad_.data)
+		,   dataset_(log)
+		,   adam_(params_.data, grad_.data, alpha)
 		,   batch_size_(batch_size)
-		,   dataset_(DATASET_DIR, log)
 		,   it_ {0}
 		,   mse_sum_ {0}
 		,   cce_sum_ {0}
@@ -177,7 +193,7 @@ trainer::trainer(
 		log_
 			<< "Initializing "
 			<< PARAM_COUNT 
-			<< "parameters of neural network...\n"
+			<< " parameters of neural network...\n"
 			<< std::endl;
 
         auto bias=params_.data+WDL_BIAS_OFFSET;

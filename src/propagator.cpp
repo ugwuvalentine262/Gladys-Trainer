@@ -56,7 +56,7 @@ propagator::~propagator()
 
 propagator::propagator
 	(
-			const float * params
+			const parameters& params
 		,   std::atomic<size_t>& it
 		,   std::atomic<float>& mse_sum
 		,   std::atomic<float>& cce_sum
@@ -66,16 +66,16 @@ propagator::propagator
 		,   batch& batch
 		,   bool& stop
 	)
-		:   params_(params)
+		:   params_(params.data)
         ,   it_(it)
         ,   mse_sum_(mse_sum)
         ,   cce_sum_(cce_sum)
         ,   acc_sum_(acc_sum)
-		,   thread_(propagator::iterator, this)
+		,   thread_(&propagator::iterator, this)
 		,   mtx_(mtx)
 		,   cv_(cv)
 		,   batch_(batch)
 		,   stop_(stop)
-		,   fpass_(params)
+		,   fpass_(params_)
 		,   bpass_(fpass_)
 {}

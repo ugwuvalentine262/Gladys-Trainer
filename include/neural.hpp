@@ -51,8 +51,10 @@ struct neural_output
 
 public:
 
-	neural_output(const value _v, const logits& _z);
-    neural_output(const value _v, const move& _m);
+	neural_output(
+            const value& _v
+        ,   const logits& _z
+    );
 
 };
 
@@ -79,9 +81,11 @@ private:
     alignas(16) nn_float_t X3[NODE_COUNT][EMBEDDING_DIM];
     alignas(16) nn_float_t X4a[NODE_COUNT][EMBEDDING_DIM];
     alignas(16) nn_float_t X4b[NODE_COUNT][EMBEDDING_DIM];
-    alignas(16) nn_float_t k[64][EMBEDDING_DIM];
     alignas(16) nn_float_t Xwdl[EMBEDDING_DIM * 2];
                 nn_float_t y_wdl[3];
+
+    int fcont_[EMBEDDING_DIM];
+    int econt_[EMBEDDING_DIM];
 
     const descriptor *d_;
 

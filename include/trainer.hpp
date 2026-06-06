@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <list>
 
 #include "adam.hpp"
 #include "propagator.hpp"
@@ -21,7 +22,7 @@
 
 class trainer
 {
-	using propagators=std::vector<propagator>;
+	using propagators=std::list<propagator>;
 
 private:
 
