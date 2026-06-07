@@ -1,7 +1,8 @@
 
 # -------------------------- variables --------------------------
 
-EPOCHS := 10
+EPOCHS := 1
+SESSIONS := 1
 WORKERS := 4
 ALPHA := 0.001
 BATCH := 50
@@ -42,18 +43,19 @@ endef
 # -------------------------- rules --------------------------
 
 help:
-	@echo "----------------------------------------------------------------------"
-	@echo "make commands                                                         "
-	@echo "----------------------------------------------------------------------"
-	@echo " 1. build        > Builds training and test utilities for the model.  "
-	@echo " 2. train        > Trains the neural network.                         "
-	@echo " 3. test         > Evaluates the neural network on the test set.      "
-	@echo " 4. run          > Runs both training and test utilities.             "
-	@echo " 5. restore      > Replaces training state with the backup.           "
-	@echo " 6. refresh      > Deletes file containing optimizer state.           "
-	@echo " 7. backup       > Saves current training state.                      "
-	@echo " 8. clean        > Delete all build artifacts.                        "
-	@echo "----------------------------------------------------------------------"
+	@echo "-----------------------------------------------------------------------"
+	@echo "make commands                                                          "
+	@echo "-----------------------------------------------------------------------"
+	@echo " 1. build        > Builds training and test utilities for the model.   "
+	@echo " 2. session      > Trains the model for $(EPOCHS) epoch(s) then tests. "
+	@echo " 3. train        > Trains the model for a given number of iterations.  "
+	@echo " 4. test         > Evaluates the neural network on the test set.       "
+	@echo " 5. run          > Runs both training and test utilities.              "
+	@echo " 6. restore      > Replaces training state with the backup.            "
+	@echo " 7. refresh      > Deletes file containing optimizer state.            "
+	@echo " 8. backup       > Saves current training state.                       "
+	@echo " 9. clean        > Delete all build artifacts.                         "
+	@echo "-----------------------------------------------------------------------"
 
 build: bin/trainer bin/tester
 	@echo "Finished building training and test utilities!"
@@ -61,18 +63,35 @@ build: bin/trainer bin/tester
 run: train test
 
 train:
-	@mkdir -p $(CURDIR)/result
-	@./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
-	@echo "Training session finished!"
+	@mkdir -p $(RESULT_DIR)
+	@echo "Training Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session."
+	@for i in $(shell seq 1 $(SESSIONS)); do \
+		for j in $(shell seq 1 $(EPOCHS)); do \
+			./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
+			./bin/tester workers $(WORKERS)
+		done; \
+		echo " Session $$i Completed!"; \
+	done
+	@echo "Training was completed successfully!"
 
 test:
-	@mkdir -p $(CURDIR)/result
+	@mkdir -p $(RESULT_DIR)
 	@./bin/tester workers $(WORKERS)
-	@echo "Testing session finished!"
+	@echo "Testing Completed!"
+
+session:
+	@mkdir -p $(RESULT_DIR)
+	@echo "Training the model in just a single session..."
+	@./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
+	@echo " - Training Complete!"
+	@./bin/tester workers $(WORKERS)
+	@echo " - Testing Complete!"
+	@$(call copy, $(RESULT_DIR), $(BACKUP_DIR))
+	@echo "Completed the session with $(EPOCHS) epoch(s)!"
 
 backup:
 	@$(call copy, $(RESULT_DIR), $(BACKUP_DIR))
-	@echo "Backup session finished!"
+	@echo "Backup Complete!"
 
 restore:
 	@$(call copy, $(BACKUP_DIR), $(RESULT_DIR))
@@ -108,4 +127,4 @@ build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@$(CXX) $(CXXFLAGS) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
-.PHONY: help build train test run backup restore refresh clean
+.PHONY: help build train test run session backup restore refresh clean
