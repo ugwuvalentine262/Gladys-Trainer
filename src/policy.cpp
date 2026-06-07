@@ -165,7 +165,7 @@ policy::policy(const std::string& pi)
     {
         moves_[count_]=move(token);
 
-        if (iss >> vals_[count_])
+        if ((iss >> vals_[count_]))
         {
             sum += vals_[count_];
         }
@@ -178,6 +178,13 @@ policy::policy(const std::string& pi)
     if (sum != 1) {
         throw policy::bad();
     }
+
+    for (size_t i=0; i < count_; i++) 
+    {
+        pairs_[i].m_=&moves_[i];
+        pairs_[i].v_=&vals_[i];
+    }
+
     std::sort(pairs_, pairs_+count_);
 }
 
