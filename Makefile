@@ -1,8 +1,8 @@
 
 # -------------------------- variables --------------------------
 
-EPOCHS := 1
-SESSIONS := 1
+EPOCHS := 10
+SESSIONS := 10
 WORKERS := 4
 ALPHA := 0.001
 BATCH := 50
@@ -20,7 +20,7 @@ override TESTSET_DIR := $(DATASET_DIR)/testset
 override LOGICNN_PROJECT_ROOT := $(CURDIR)/external/LogicNN
 override LOGICNN_INCLUDE_DIR := $(LOGICNN_PROJECT_ROOT)/include
 override EIGEN_INCLUDE_DIR := $(CURDIR)/external/Eigen
-override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++20 -O3 -mavx -mfma 
+override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++23 -O3 -mavx -mfma 
 override LDFLAGS := -L$(CURDIR)/lib/LogicNN/release -llogicnn_backprop -llogicnn -lm
 override TRAINER_SRC := $(filter-out src/tester.cpp, $(wildcard src/*.cpp))
 override TRAINER_HDR := $(filter-out include/tester.hpp, $(wildcard include/*.hpp))
@@ -45,48 +45,48 @@ help:
 	@echo "-----------------------------------------------------------------------"
 	@echo "make commands                                                          "
 	@echo "-----------------------------------------------------------------------"
-	@echo " 1. build        > Builds training and test utilities for the model.   "
-	@echo " 2. session      > Trains the model for $(EPOCHS) epoch(s) then tests. "
-	@echo " 3. train        > Trains the model for a given number of iterations.  "
-	@echo " 4. test         > Evaluates the neural network on the test set.       "
-	@echo " 5. run          > Runs both training and test utilities.              "
-	@echo " 6. restore      > Replaces training state with the backup.            "
-	@echo " 7. refresh      > Deletes file containing optimizer state.            "
-	@echo " 8. backup       > Saves current training state.                       "
-	@echo " 9. clean        > Delete all build artifacts.                         "
+	@echo "* build        > Builds training and test utilities for the model.     "
+	@echo "* run          > Runs $(SESSIONS) session(s) of training.              "
+	@echo "* train        > Trains the model for $(EPOCHS) epoch(s).              "
+	@echo "* test         > Evaluates the neural network on the test set.         "
+	@echo "* session      > Trains the model for $(EPOCHS) epoch(s) then tests.   "
+	@echo "* backup       > Saves current training state.                         "
+	@echo "* restore      > Replaces training state with the backup.              "
+	@echo "* refresh      > Deletes file containing optimizer state.              "
+	@echo "* reset        > Resets training states to square one.                 "
+	@echo "* clean        > Delete all build artifacts.                           "
 	@echo "-----------------------------------------------------------------------"
 
 build: bin/trainer bin/tester
 	@echo "Finished building training and test utilities!"
 
-run: train test
+run:
+	@echo "Sessions Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session.\n"
+	@for i in $(shell seq 1 $(SESSIONS)); do \
+		echo "Session $$i started..."; \
+		$(MAKE) backup; \
+		$(MAKE) train EPOCHS=$(EPOCHS) BATCH=$(BATCH) ALPHA=$(ALPHA) WORKERS=$(WORKERS); \
+		$(MAKE) test WORKERS=$(WORKERS); \
+		echo "Session $$i completed!\n"; \
+	done
+	@echo "$(SESSIONS) training session(s) were completed successfully!\n"
 
 train:
 	@mkdir -p $(RESULT_DIR)
-	@echo "Training Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session."
-	@for i in $(shell seq 1 $(SESSIONS)); do \
-		for j in $(shell seq 1 $(EPOCHS)); do \
-			./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
-			./bin/tester workers $(WORKERS)
-		done; \
-		echo " Session $$i Completed!"; \
-	done
-	@echo "Training was completed successfully!"
+	@./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
+	@echo "$(EPOCHS) training epoch(s) completed!"
 
 test:
 	@mkdir -p $(RESULT_DIR)
 	@./bin/tester workers $(WORKERS)
-	@echo "Testing Completed!"
+	@echo "Testing completed!"
 
 session:
 	@mkdir -p $(RESULT_DIR)
-	@echo "Training the model in just a single session..."
-	@./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
-	@echo " - Training Complete!"
-	@./bin/tester workers $(WORKERS)
-	@echo " - Testing Complete!"
-	@$(call copy, $(RESULT_DIR), $(BACKUP_DIR))
-	@echo "Completed the session with $(EPOCHS) epoch(s)!"
+	@echo "Session started..."
+	@$(MAKE) train EPOCHS=$(EPOCHS) BATCH=$(BATCH) ALPHA=$(ALPHA) WORKERS=$(WORKERS)
+	@$(MAKE) test WORKERS=$(WORKERS)
+	@echo "Session completed!\n"
 
 backup:
 	@$(call copy, $(RESULT_DIR), $(BACKUP_DIR))
@@ -94,11 +94,16 @@ backup:
 
 restore:
 	@$(call copy, $(BACKUP_DIR), $(RESULT_DIR))
-	@echo "Restore session finished!"
+	@rm -rf backup
+	@echo "Restoration Complete!"
 
 refresh:
 	@rm -f $(RESULT_DIR)/$(ADAMFILE)
 	@echo "Training state refreshed successfully!"
+
+reset:
+	@rm -rf result backup
+	@echo "Training state has been reset successfully!"
 
 clean:
 	@rm -rf build bin lib
@@ -126,4 +131,4 @@ build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@$(CXX) $(CXXFLAGS) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
-.PHONY: help build train test run session backup restore refresh clean
+.PHONY: help build run train test session backup restore refresh reset clean
