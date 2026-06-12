@@ -9,7 +9,7 @@
 #ifndef LOSS_HPP
 #define LOSS_HPP
 
-#include <neural.hpp>
+#include "neural.hpp"
 
 struct error
 {

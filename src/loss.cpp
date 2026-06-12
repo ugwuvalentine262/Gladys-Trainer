@@ -9,8 +9,8 @@
 #include <cstring>
 #include <Eigen/Dense>
 
-#include <loss.hpp>
-#include <policy.hpp>
+#include "loss.hpp"
+#include "policy.hpp"
 
 class cce
 {
