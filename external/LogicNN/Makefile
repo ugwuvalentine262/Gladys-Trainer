@@ -13,14 +13,23 @@ else ifeq ($(ALIGN), ON)
 override CFLAGS := -DLNN_ALIGN
 endif
 
-override CFLAGS += -DLNN_CACHELINE=$(CACHELINE) -Werror -Wextra -Wall -std=c17 -I./include
+override CFLAGS += -DLNN_CACHELINE=$(CACHELINE) -Werror -Wextra -Wall -std=c99 -I./include
 override DEBUG_FLAGS := $(CFLAGS) -g -O0 -DDEBUG
 override RELEASE_FLAGS := $(CFLAGS) -O2 -O3 -DNDEBUG
 override ASAN_FLAGS := $(CFLAGS) -fsanitize=address -g -O0 -DDEBUG
 
-all: release debug asan
+help:
+	@echo "---------------------------------------------------------------------"
+	@echo "make commands                                                        "
+	@echo "---------------------------------------------------------------------"
+	@echo " 1. build        > Builds the library in release and debug modes.    "
+	@echo " 2. release      > Builds the library in release mode.               "
+	@echo " 3. debug        > Builds the library in debug mode.                 "
+	@echo " 4. asan         > Builds the library using address sanitizer.       "
+	@echo " 5. clean        > Delete all build artifacts.                       "
+	@echo "---------------------------------------------------------------------"
 
-build: all
+build: release debug asan
 
 release: $(LIB_DIR)/release/liblogicnn.a $(LIB_DIR)/release/liblogicnn_backprop.a
 	@echo Finished building Logic Neural Network library in release mode! 
@@ -85,4 +94,4 @@ $(BUILD_DIR)/asan/logicnn_backprop.o: ./src/logicnn_backprop.c ./include/logicnn
 	@$(CC) $(ASAN_FLAGS) -c $< -o $@
 
 .PRECIOUS: $(BUILD_DIR)/release/%.o $(BUILD_DIR)/debug/%.o $(BUILD_DIR)/asan/%.o
-.PHONY: all clean release debug asan build
+.PHONY: help clean release debug asan build
