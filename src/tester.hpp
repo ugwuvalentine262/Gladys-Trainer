@@ -15,7 +15,6 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-#include <atomic>
 #include <string>
 #include <stack>
 
@@ -27,25 +26,22 @@ class tester
 
 private:
 
-	std::ofstream& log_;
 	dataset dataset_;
 	std::stack<const sample*> stack_;
 	parameters params_;
 	std::list<std::thread> threads_;
 	std::condition_variable cv_;
 	std::mutex mtx_;
-	std::atomic<int> it_;
-	std::atomic<float> mse_sum_;
-	std::atomic<float> cce_sum_;
-	std::atomic<float> acc_sum_;
+	size_t rem_;
+	float mse_sum_;
+	float cce_sum_;
+	float acc_sum_;
 
 private:
 
 	void iterator();
 
 public:
-
-	void test();
 
 	~tester();
 

@@ -35,13 +35,15 @@ private:
 	adam adam_;
 	const size_t batch_size_;
 
-	std::atomic<size_t> it_;
-	std::atomic<float> mse_sum_;
-	std::atomic<float> cce_sum_;
-	std::atomic<float> acc_sum_;
+	size_t rem_;
+	float mse_sum_;
+	float cce_sum_;
+	float acc_sum_;
 	std::mutex mtx_;
-	std::condition_variable cv_;
+	std::condition_variable work_cv_;
+	std::condition_variable done_cv_;
 	batch batch_;
+    bool batch_ready_;
 	bool stop_;
 
 public:
