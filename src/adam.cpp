@@ -10,8 +10,8 @@
 #include <cstring>
 #include <Eigen/Dense>
 
-#include <io.hpp>
-#include <adam.hpp>
+#include "io.hpp"
+#include "adam.hpp"
 
 bool adam::save() const
 {
