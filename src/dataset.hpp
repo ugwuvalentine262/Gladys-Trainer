@@ -23,10 +23,12 @@
 class sample
 {
 
+	using Policy = std::string;
+
 private:
 
 	const board brd_;
-	const policy policy_;
+	const Policy policy_;
 	const value eval_;
 
 public:
@@ -44,12 +46,12 @@ public:
 
 struct input_data 
 {
-	const sample& sample_;
-	float * const grad_;
+	const sample * sample_=0;
+	gradients * grad_=0;
 
 public:
 
-	input_data(const sample&, float[]);
+	input_data(const sample *, gradients&);
 
 };
 

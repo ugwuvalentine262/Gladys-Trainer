@@ -10,16 +10,18 @@
 #include <algorithm>
 #include <cmath>
 
-#include <dataset.hpp>
+#include "dataset.hpp"
 
 descriptor sample::input() const
 {
-    return brd_;
+    policy pi(policy_);
+    return descriptor(brd_, pi.moves_data(), pi.size());
 }
 
 neural_output sample::output() const
 {
-    return neural_output(eval_, policy_);
+    policy pi(policy_);
+    return neural_output(eval_, pi);
 }
 
 sample::sample(
@@ -32,15 +34,15 @@ sample::sample(
         ,   eval_(2.0 / (1 + std::exp(std::stoi(eval) * -0.004)) - 1)
 {}
 
-input_data::input_data(const sample& sample, float grad[])
+input_data::input_data(const sample *sample, gradients& grad)
     :   sample_(sample)
-    ,   grad_(grad)
+    ,   grad_(&grad)
 {}
 
 void dataset::shuffle()
 {
 	std::random_device rd;
-    std::mt19937 gen(rd());
+	std::mt19937 gen(rd());
 
     std::shuffle
     (
