@@ -26,7 +26,7 @@ class propagator
 
 private:
 
-	const float * params_;
+	float * const params_;
 
 	size_t& rem_;
 	float& mse_sum_;
@@ -52,7 +52,7 @@ public:
 	~propagator();
 
 	propagator(
-			const parameters& params
+			parameters& params
 		,   size_t& rem
 		,   float& mse_sum
 		,   float& cce_sum
