@@ -10,7 +10,6 @@
 #define PROPAGATOR_HPP
 
 #include <thread>
-#include <atomic>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
@@ -29,14 +28,16 @@ private:
 
 	const float * params_;
 
-	std::atomic<size_t>& it_;
-	std::atomic<float>& mse_sum_;
-	std::atomic<float>& cce_sum_;
-	std::atomic<float>& acc_sum_;
+	size_t& rem_;
+	float& mse_sum_;
+	float& cce_sum_;
+	float& acc_sum_;
 	std::thread thread_;
 	std::mutex& mtx_;
-	std::condition_variable& cv_;
+	std::condition_variable& work_cv_;
+	std::condition_variable& done_cv_;
 	batch& batch_;
+    bool& batch_ready_;
 	bool& stop_;
 
 	forward_pass fpass_;
@@ -52,13 +53,15 @@ public:
 
 	propagator(
 			const parameters& params
-		,   std::atomic<size_t>& it
-		,   std::atomic<float>& mse_sum
-		,   std::atomic<float>& cce_sum
-		,   std::atomic<float>& acc_sum
+		,   size_t& rem
+		,   float& mse_sum
+		,   float& cce_sum
+		,   float& acc_sum
 		,   std::mutex& mtx
-		,   std::condition_variable& cv
+		,   std::condition_variable& work_cv
+		,   std::condition_variable& done_cv
 		,   batch& batch
+        ,   bool& batch_ready
 		,   bool& stop
 	);
 

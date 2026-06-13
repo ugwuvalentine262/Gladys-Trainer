@@ -6,46 +6,51 @@
  * modification, or distribution is not permitted.
  */
 
-#include <propagator.hpp>
-#include <loss.hpp>
+#include "propagator.hpp"
+#include "loss.hpp"
 
 void propagator::iterator()
 {
 	for (;;) {
 
-		std::unique_lock<std::mutex> lock(mtx_);
+        input_data data;
 
-		cv_.wait(lock, [this]() {
-			return stop_ || !batch_.empty();
-		});
+        {
+		    std::unique_lock<std::mutex> lock(mtx_);
 
-		if (batch_.empty()) 
-		{
-			if (stop_) break;
-			continue; 
-		}
+		    work_cv_.wait(lock, [this]() {
+			    return stop_ || (batch_ready_ && !batch_.empty());
+		    });
 
-		auto data = batch_.front();
+            if (stop_) return;
+            if (batch_.empty()) continue;
 
-		batch_.pop();
-		lock.unlock();
-		cv_.notify_one();
+            data = batch_.front();
+		    batch_.pop();
+        }
 
-		auto x = data.sample_.input();
-		auto y = data.sample_.output();
+		auto x = data.sample_->input();
+		auto y = data.sample_->output();
 
 		auto y_hat = fpass_(x);
 
 		auto error = loss::forward(y_hat, y);
 		auto delta = loss::backward(y_hat, y);
 
-		mse_sum_ += error.mse;
-		cce_sum_ += error.cce;
-		acc_sum_ += error.accuracy;
+		bpass_(delta, data.grad_->data);
 
-		bpass_(delta, data.grad_);
+        {
+            std::lock_guard<std::mutex> lock(mtx_);
 
-		it_++;
+        	mse_sum_ += error.mse;
+		    cce_sum_ += error.cce;
+		    acc_sum_ += error.accuracy;
+
+            if (!--rem_) {
+                batch_ready_=false;
+                done_cv_.notify_one();
+            }
+        }	
 	}
 }
 
@@ -57,24 +62,28 @@ propagator::~propagator()
 propagator::propagator
 	(
 			const parameters& params
-		,   std::atomic<size_t>& it
-		,   std::atomic<float>& mse_sum
-		,   std::atomic<float>& cce_sum
-		,   std::atomic<float>& acc_sum
+		,   size_t& rem
+		,   float& mse_sum
+		,   float& cce_sum
+		,   float& acc_sum
 		,   std::mutex& mtx
-		,   std::condition_variable& cv
+		,   std::condition_variable& work_cv
+		,   std::condition_variable& done_cv
 		,   batch& batch
+        ,   bool& batch_ready
 		,   bool& stop
 	)
 		:   params_(params.data)
-        ,   it_(it)
+        ,   rem_(rem)
         ,   mse_sum_(mse_sum)
         ,   cce_sum_(cce_sum)
         ,   acc_sum_(acc_sum)
 		,   thread_(&propagator::iterator, this)
 		,   mtx_(mtx)
-		,   cv_(cv)
+		,   work_cv_(work_cv)
+		,   done_cv_(done_cv)
 		,   batch_(batch)
+        ,   batch_ready_(batch_ready)
 		,   stop_(stop)
 		,   fpass_(params_)
 		,   bpass_(fpass_)
