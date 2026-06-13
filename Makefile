@@ -58,8 +58,8 @@ help:
 	@echo "-----------------------------------------------------------------------"
 	@echo "* build        > Builds training and test utilities for the model.     "
 	@echo "* run          > Runs $(SESSIONS) session(s) of training.              "
-	@echo "* train        > Trains the model for $(EPOCHS) epoch(s).              "
-	@echo "* test         > Evaluates the neural network on the test set.         "
+	@echo "* epoch        > Trains the model for a single epoch.                  "
+	@echo "* eval         > Evaluates the neural network on the test set.         "
 	@echo "* backup       > Saves current training state.                         "
 	@echo "* restore      > Replaces training state with the backup.              "
 	@echo "* refresh      > Deletes file containing optimizer state.              "
@@ -79,22 +79,21 @@ run:
 		echo "Session $$i started..." $(OUTPUT); \
 		make backup 1>/dev/null 2>&1; \
 		echo "Backup Complete!" $(OUTPUT); \
-		make train EPOCHS=$(EPOCHS) BATCH=$(BATCH) ALPHA=$(ALPHA) WORKERS=$(WORKERS) 1>/dev/null 2>&1; \
+		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS); \
 		echo "$(EPOCHS) training epoch(s) completed!" $(OUTPUT); \
-		make test WORKERS=$(WORKERS) 1>/dev/null 2>&1; \
 		echo "Testing Complete!" $(OUTPUT); \
 		echo "Session $$i completed!\n" $(OUTPUT); \
 		i=$$((i+1)); \
 	done
 	@echo "$(SESSIONS) training session(s) were completed successfully!\n" $(OUTPUT)
 
-train:
+epoch:
 	@mkdir -p $(RESULT_DIR)
 	@echo "Training neural network..."
-	@./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
-	@echo "$(EPOCHS) training epoch(s) completed!"
+	@./bin/trainer epochs 1 batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
+	@echo "1 training epoch completed!"
 
-test:
+eval:
 	@mkdir -p $(RESULT_DIR)
 	@echo "Testing neural network..."
 	@./bin/tester workers $(WORKERS)
@@ -143,4 +142,4 @@ build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@$(CXX) $(CXXFLAGS) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
-.PHONY: help build run train test backup restore refresh reset clean
+.PHONY: help build run epoch eval backup restore refresh reset clean
