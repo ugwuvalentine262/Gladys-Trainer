@@ -53,8 +53,8 @@ class logits
 
 protected:
 
-    move_t pairs_[100];
-    move moves_[100];
+    move_t pairs_[128];
+    move moves_[128];
     alignas(16) float vals_[128];
     size_t count_;
 
@@ -85,7 +85,7 @@ struct policy : public logits
 
     policy()=default;
     policy(const std::string& pi);
-    policy(const policy& policy);
+    policy(const policy& pi);
 
 };
 

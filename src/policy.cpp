@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <sstream>
 
-#include <policy.hpp>
+#include "policy.hpp"
 
 move::move(const std::string& algebra)
 {
@@ -37,14 +37,14 @@ move::move(const std::string& algebra)
     {
         switch(algebra[4])
         {
-        case 'n': promo=2; break;
-        case 'b': promo=3; break;
-        case 'r': promo=4; break;
-        case 'q': promo=5; break;
-        case 'N': promo=2; break;
-        case 'B': promo=3; break;
-        case 'R': promo=4; break;
-        case 'Q': promo=5; break;
+        case 'n': promo=0x2; break;
+        case 'b': promo=0x3; break;
+        case 'r': promo=0x4; break;
+        case 'q': promo=0x5; break;
+        case 'N': promo=0x2; break;
+        case 'B': promo=0x3; break;
+        case 'R': promo=0x4; break;
+        case 'Q': promo=0x5; break;
         default: throw move::bad();
         }
     }
@@ -188,6 +188,6 @@ policy::policy(const std::string& pi)
     std::sort(pairs_, pairs_+count_);
 }
 
-policy::policy(const policy& policy)
-    :   logits(policy)
+policy::policy(const policy& pi)
+    :   logits(pi)
 {}
