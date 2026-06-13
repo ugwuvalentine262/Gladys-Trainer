@@ -13,6 +13,8 @@
 
 #include <logicnn.h>
 
+#include "policy.hpp"
+
 #define EDGE_COUNT 7
 #define ATTRIBUTE_COUNT 20
 #define NODE_COUNT 25
@@ -28,20 +30,22 @@ struct board
 
 public:
 
-    board(const std::string& fen);
+	board(const std::string& fen);
 
 };
 
 struct descriptor
 {
-    friend class backward_pass;
-    friend class forward_pass;
+	friend class backward_pass;
+	friend class forward_pass;
 
 private:
 
-    const board b;
+	const board b;
+    move moves_[128];
+    const int mcount_;
 	nn_uint16_t attributes_data[NODE_COUNT][ATTRIBUTE_COUNT];
-	nn_relation_t relations[NODE_COUNT][10];
+	nn_relation_t relations[NODE_COUNT][12];
 	nn_pair_t pairs[EDGE_COUNT][90];
 	nn_edge_t edges[EDGE_COUNT];
 	nn_node_t nodes[NODE_COUNT];
@@ -53,7 +57,7 @@ private:
 
 public:
 
-	descriptor(const board& brd);
+	descriptor(const board& brd, const move moves[], int mcount);
 
 };
 
