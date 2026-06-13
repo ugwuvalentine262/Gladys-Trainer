@@ -6,6 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
+#include <iostream>
 #include <Eigen/Dense>
 #include <fstream>
 #include <ctime>
@@ -17,8 +18,8 @@
 #include <deque>
 #include <queue>
 
-#include <io.hpp>
-#include <trainer.hpp>
+#include "io.hpp"
+#include "trainer.hpp"
 
 void trainer::train()
 {
@@ -26,25 +27,22 @@ void trainer::train()
 
 	auto start = std::time(nullptr);
 
-	mse_sum_.store(0, std::memory_order_relaxed);
-	cce_sum_.store(0, std::memory_order_relaxed);
-	acc_sum_.store(0, std::memory_order_relaxed);
+	mse_sum_=cce_sum_=acc_sum_=0;
 
 	for (const auto& sample : dataset_)
-	{
-		batch_.emplace(*sample, xgrad_.at(batch_.size()).data);
+	{    
+        batch_.emplace(sample, xgrad_.at(batch_.size()));
 
 		if (batch_.size()==batch_size_)
 		{
-			{
-				cv_.notify_one();
+            std::ofstream file(NNFILE, std::ios::binary);
 
-				std::unique_lock<std::mutex> lock(mtx_);
+            batch_ready_=true;
+            rem_=batch_.size();
 
-				cv_.wait(lock, [this]() {
-					return (it_.load() % batch_size_)==0 && batch_.empty();
-				});
-			}
+            work_cv_.notify_all();
+            std::unique_lock<std::mutex> lock(mtx_);
+			done_cv_.wait(lock, [this]() { return !batch_ready_ && !rem_; });
 
 			Eigen::Map<Eigen::VectorXf> v(grad_.data, PARAM_COUNT);
 
@@ -59,14 +57,26 @@ void trainer::train()
 
 			adam_.step();
 			adam_.zero_grad();
+
+	        if (!file) {
+
+		        log_ 
+			        << "Unable to save neural network to file."
+			        << std::endl;
+
+		        std::exit(EXIT_FAILURE);
+	        }
+
+	        write(file, params_.data, PARAM_COUNT);
+	        adam_.save();
 		}
 	}
 
 	auto end = std::time(nullptr);
 
-	auto mse_error = mse_sum_.load() / dataset_.size();
-	//auto cce_error = cce_sum_.load() / dataset_.size();
-	//auto accuracy = acc_sum_.load() / dataset_.size();
+	auto mse_error = mse_sum_ / dataset_.size();
+	auto cce_error = cce_sum_ / dataset_.size();
+	auto accuracy = acc_sum_ / dataset_.size();
 
 	size_t seconds = std::difftime(end, start);
 
@@ -79,16 +89,16 @@ void trainer::train()
 	log_ 
 		<< std::fixed 
 		<< std::setprecision(6)
-		<< " mse: " 
+		<< "mse: " 
 		<< std::setw(8)
 		<< mse_error
-		/*<< " cce: "
+		<< " | cce: "
 		<< std::setw(8)
 		<< cce_error
-		<< " accuracy: "
+		<< " | accuracy: "
 		<< std::setw(8) 
-		<< accuracy*/
-		<< " elapsed: "
+		<< accuracy
+		<< " | elapsed: "
 		<< std::setfill('0')
 		<< std::setw(2)
 		<< elapsed.hr 
@@ -97,7 +107,8 @@ void trainer::train()
 		<< elapsed.min
 		<< ":"
 		<< std::setw(2)
-		<< elapsed.sec;
+		<< elapsed.sec
+        << std::endl;
 
     for (const auto& p : params_.data)
     {
@@ -114,27 +125,12 @@ void trainer::train()
 
 trainer::~trainer()
 {
-	std::ofstream file(NNFILE, std::ios::binary);
-
 	{
 		std::lock_guard<std::mutex> lock(mtx_);
 		stop_=true;
 	}
 
-	cv_.notify_all();
-
-	if (!file) {
-
-		log_ 
-			<< "Unable to open neural network file!" 
-			<< std::endl;
-
-		exit(EXIT_FAILURE);
-	}
-
-	write(file, params_.data, PARAM_COUNT);
-
-	adam_.save();
+	work_cv_.notify_all();
 }
 
 trainer::trainer(
@@ -146,16 +142,17 @@ trainer::trainer(
 		:   log_(log)
 		,   params_ {}
 		,   grad_ {}
-		,   xgrad_ {}
+		,   xgrad_(batch_size)
 		,   props_ {}
 		,   dataset_(log)
 		,   adam_(params_.data, grad_.data, alpha)
 		,   batch_size_(batch_size)
-		,   it_ {0}
-		,   mse_sum_ {0}
-		,   cce_sum_ {0}
-		,   acc_sum_ {0}
+		,   rem_(0)
+		,   mse_sum_(0)
+		,   cce_sum_(0)
+		,   acc_sum_(0)
 		,   batch_ {}
+        ,   batch_ready_(false)
 		,   stop_(false)
 {
 	std::random_device rd;
@@ -167,13 +164,15 @@ trainer::trainer(
 		props_.emplace_back(
 
 				params_
-			,   it_
+			,   rem_
 			,   mse_sum_
 			,   cce_sum_
 			,   acc_sum_
 			,   mtx_
-			,   cv_
+			,   work_cv_
+            ,   done_cv_
 			,   batch_
+            ,   batch_ready_
 			,   stop_
 		);
 	}
@@ -190,19 +189,21 @@ trainer::trainer(
 
 	if (!file || file.eof())
 	{
-		log_
-			<< "Initializing "
-			<< PARAM_COUNT 
-			<< " parameters of neural network...\n"
-			<< std::endl;
-
-        auto bias=params_.data+WDL_BIAS_OFFSET;
+		auto bias=params_.data+WDL_BIAS_OFFSET;
 
 		for (int i=0; i < PARAM_COUNT; i++)
 		{
 		    params_.data[i] = dist(gen);
 		}
-        bias[0]=bias[1]=bias[2]=0;
+		bias[0]=bias[1]=bias[2]=0;
+
+        log.close();
+        log.open(LOGFILE);
+		log
+			<< "Initialized "
+			<< PARAM_COUNT 
+			<< " parameters of neural network.\n"
+			<< std::endl;
 	}
 }
 
@@ -219,7 +220,7 @@ int main(int argc, char *argv[])
 
 	std::ofstream log(LOGFILE, std::ios::app);
 
-	if (!log) exit(EXIT_FAILURE);
+	if (!log) std::exit(EXIT_FAILURE);
 
 	while (!args.empty())
 	{
