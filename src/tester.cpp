@@ -12,10 +12,10 @@
 #include <cstdlib>
 #include <string>
 
-#include <dataset.hpp>
-#include <tester.hpp>
-#include <io.hpp>
-#include <loss.hpp>
+#include "dataset.hpp"
+#include "tester.hpp"
+#include "io.hpp"
+#include "loss.hpp"
 
 void tester::iterator()
 {
@@ -28,13 +28,9 @@ void tester::iterator()
 		{
 			std::lock_guard<std::mutex> lock(mtx_);
 
-			if (stack_.empty()) 
+			if (stack_.empty())
 			{
-				if (static_cast<size_t>(it_)>=dataset_.size())
-				{
-					cv_.notify_one();
-				}
-				break;
+				return;
 			}
 			sample = stack_.top();
 			stack_.pop();
@@ -42,67 +38,21 @@ void tester::iterator()
 
 		auto x = sample->input();
 		auto y = sample->output();
-
 		auto y_hat = fpass(x);
-
 		auto error = loss::forward(y_hat, y);
 
-		mse_sum_ += error.mse;
-		cce_sum_ += error.cce;
-		acc_sum_ += error.accuracy;
+        {
+            std::lock_guard<std::mutex> lock(mtx_);
 
-		it_++;
+        	mse_sum_ += error.mse;
+		    cce_sum_ += error.cce;
+		    acc_sum_ += error.accuracy;
+
+            if (--rem_==0) {
+                cv_.notify_one();
+            }
+        }
 	}
-}
-
-void tester::test()
-{
-	auto start = std::time(nullptr);
-
-	{
-		std::unique_lock<std::mutex> lock(mtx_);
-
-		cv_.wait(lock, [this]() {
-			return static_cast<size_t>(it_) >= dataset_.size() && stack_.empty();
-		});
-	}
-
-	auto end = std::time(nullptr);
-
-	auto mse_error = mse_sum_.load() / dataset_.size();
-	//auto cce_error = cce_sum_.load() / dataset_.size();
-	//auto accuracy = acc_sum_.load() / dataset_.size();
-
-	size_t seconds = std::difftime(end, start);
-
-	struct { int hr, min, sec; } elapsed;
-
-	elapsed.hr = seconds / 3600;
-	elapsed.min = (seconds % 3600) / 60;
-	elapsed.sec = seconds % 60;
-
-	log_ 
-		<< std::fixed 
-		<< std::setprecision(6)
-		<< " mse: " 
-		<< std::setw(8)
-		<< mse_error
-		/*<< " cce: "
-		<< std::setw(8)
-		<< cce_error
-		<< " accuracy: "
-		<< std::setw(8) 
-		<< accuracy*/
-		<< " elapsed: "
-		<< std::setfill('0')
-		<< std::setw(2)
-		<< elapsed.hr 
-		<< ":"
-		<< std::setw(2)
-		<< elapsed.min
-		<< ":"
-		<< std::setw(2)
-		<< elapsed.sec;
 }
 
 tester::~tester()
@@ -117,15 +67,14 @@ tester::tester(
 			size_t workers
 		,   std::ofstream& log
 	)
-		:   log_(log)
-		,   dataset_(log)
+		:   dataset_(log)
 		,   stack_ {}
 		,   params_ {}
 		,   threads_{}
-		,   it_ {0}
-		,   mse_sum_ {0}
-		,   cce_sum_ {0}
-		,   acc_sum_ {0}
+		,   rem_(dataset_.size())
+		,   mse_sum_(0)
+		,   cce_sum_(0)
+		,   acc_sum_(0)
 {
 	std::ifstream file(NNFILE, std::ios::binary);
 
@@ -136,7 +85,7 @@ tester::tester(
  
 	if (!file) 
 	{
-		log_ 
+		log
 			<< "Unable to open neural network file!" 
 			<< std::endl;
 
@@ -147,7 +96,7 @@ tester::tester(
 
 	if (file.eof())
 	{
-		log_ 
+		log
 			<< "Unable to read parameters from file!" 
 			<< std::endl;
 
@@ -158,6 +107,49 @@ tester::tester(
 	{
 		threads_.emplace_back(&tester::iterator, this);
 	}
+
+	auto start = std::time(nullptr);
+
+    std::unique_lock<std::mutex> lock(mtx_);
+	cv_.wait(lock, [this]() { return rem_==0; });
+
+	auto end = std::time(nullptr);
+
+	auto mse_error = mse_sum_ / dataset_.size();
+	auto cce_error = cce_sum_ / dataset_.size();
+	auto accuracy = acc_sum_ / dataset_.size();
+
+	size_t seconds = std::difftime(end, start);
+
+	struct { int hr, min, sec; } elapsed;
+
+	elapsed.hr = seconds / 3600;
+	elapsed.min = (seconds % 3600) / 60;
+	elapsed.sec = seconds % 60;
+
+	log
+		<< std::fixed 
+		<< std::setprecision(6)
+		<< "mse: " 
+		<< std::setw(8)
+		<< mse_error
+		<< " | cce: "
+		<< std::setw(8)
+		<< cce_error
+		<< " | accuracy: "
+		<< std::setw(8) 
+		<< accuracy
+		<< " | elapsed: "
+		<< std::setfill('0')
+		<< std::setw(2)
+		<< elapsed.hr 
+		<< ":"
+		<< std::setw(2)
+		<< elapsed.min
+		<< ":"
+		<< std::setw(2)
+		<< elapsed.sec
+        << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -189,7 +181,5 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	tester tester(workers, log);
-
-	tester.test();
+    tester(workers, log);
 }
