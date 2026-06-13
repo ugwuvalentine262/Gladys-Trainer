@@ -4,6 +4,4 @@ bin/
 lib/
 dataset/
 result/
-results/
 backup/
-pipeline.sh
