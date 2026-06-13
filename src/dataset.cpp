@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "descriptor.hpp"
 #include "dataset.hpp"
 
 descriptor sample::input() const
