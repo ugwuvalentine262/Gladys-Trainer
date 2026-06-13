@@ -51,6 +51,7 @@ struct input_data
 
 public:
 
+    input_data()=default;
 	input_data(const sample *, gradients&);
 
 };
