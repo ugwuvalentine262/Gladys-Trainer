@@ -6,6 +6,7 @@ SESSIONS := 1
 WORKERS := 4
 ALPHA := 0.001
 BATCH := 50
+LOG ?= FALSE
 
 override CXX := g++
 override BACKUP_DIR := $(CURDIR)/backup
@@ -71,10 +72,10 @@ build: bin/trainer bin/tester
 
 run:
 	@mkdir -p $(RESULT_DIR)
-	@echo "-----------------------------------------------------------------------------" $(OUTPUT)
+	@echo "-------------------------------------------------------------------" $(OUTPUT)
 	@echo "Sessions Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session." $(OUTPUT)
-	@echo "-----------------------------------------------------------------------------\n" $(OUTPUT)
-	@for i in $(shell seq 1 $(SESSIONS)); do \
+	@echo "-------------------------------------------------------------------\n" $(OUTPUT)
+	@i=1; while [ $$i -le $(SESSIONS) ]; do \
 		echo "Session $$i started..." $(OUTPUT); \
 		make backup 1>/dev/null 2>&1; \
 		echo "Backup Complete!" $(OUTPUT); \
@@ -83,6 +84,7 @@ run:
 		make test WORKERS=$(WORKERS) 1>/dev/null 2>&1; \
 		echo "Testing Complete!" $(OUTPUT); \
 		echo "Session $$i completed!\n" $(OUTPUT); \
+		i=$$((i+1)); \
 	done
 	@echo "$(SESSIONS) training session(s) were completed successfully!\n" $(OUTPUT)
 
@@ -141,4 +143,4 @@ build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@$(CXX) $(CXXFLAGS) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
-.PHONY: help build run train test session backup restore refresh reset clean
+.PHONY: help build run train test backup restore refresh reset clean
