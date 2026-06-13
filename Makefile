@@ -1,8 +1,8 @@
 
 # -------------------------- variables --------------------------
 
-EPOCHS := 10
-SESSIONS := 10
+EPOCHS := 1
+SESSIONS := 1
 WORKERS := 4
 ALPHA := 0.001
 BATCH := 50
@@ -13,6 +13,7 @@ override RESULT_DIR := $(CURDIR)/result
 override DATASET_DIR := $(CURDIR)/dataset
 override ADAMFILE := adam
 override NNFILE := nn
+override LOGFILE := sessions.txt
 override TRAINLOG := trainlog.txt
 override TESTLOG := testlog.txt
 override TRAINSET_DIR := $(DATASET_DIR)/trainset
@@ -20,7 +21,7 @@ override TESTSET_DIR := $(DATASET_DIR)/testset
 override LOGICNN_PROJECT_ROOT := $(CURDIR)/external/LogicNN
 override LOGICNN_INCLUDE_DIR := $(LOGICNN_PROJECT_ROOT)/include
 override EIGEN_INCLUDE_DIR := $(CURDIR)/external/Eigen
-override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++23 -O3 -mavx -mfma 
+override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++23 -O2 -O3 -mavx -mfma 
 override LDFLAGS := -L$(CURDIR)/lib/LogicNN/release -llogicnn_backprop -llogicnn -lm
 override TRAINER_SRC := $(filter-out src/tester.cpp, $(wildcard src/*.cpp))
 override TRAINER_HDR := $(filter-out include/tester.hpp, $(wildcard include/*.hpp))
@@ -28,6 +29,14 @@ override TRAINER_OBJ := $(addprefix build/trainer/, $(TRAINER_SRC:src/%.cpp=%.o)
 override TESTER_SRC := $(filter-out src/trainer.cpp src/adam.cpp, $(wildcard src/*.cpp))
 override TESTER_HDR := $(filter-out include/trainer.hpp include/adam.hpp, $(wildcard include/*.hpp))
 override TESTER_OBJ := $(addprefix build/tester/, $(TESTER_SRC:src/%.cpp=%.o))
+
+ifeq ($(LOG), TRUE)
+override OUTPUT := >> $(RESULT_DIR)/$(LOGFILE)
+else ifeq ($(LOG), ON)
+override OUTPUT := >> $(RESULT_DIR)/$(LOGFILE)
+else ifeq ($(LOG), 1)
+override OUTPUT := >> $(RESULT_DIR)/$(LOGFILE)
+endif
 
 # -------------------------- macros --------------------------
 
@@ -37,6 +46,7 @@ define copy
 	@cp $(1)/$(ADAMFILE) $(2)/$(ADAMFILE) 2>/dev/null || true
 	@cp $(1)/$(TRAINLOG) $(2)/$(TRAINLOG) 2>/dev/null || true
 	@cp $(1)/$(TESTLOG)  $(2)/$(TESTLOG)  2>/dev/null || true
+	@cp $(1)/$(LOGFILE)  $(2)/$(LOGFILE)  2>/dev/null || true
 endef
 
 # -------------------------- rules --------------------------
@@ -49,7 +59,6 @@ help:
 	@echo "* run          > Runs $(SESSIONS) session(s) of training.              "
 	@echo "* train        > Trains the model for $(EPOCHS) epoch(s).              "
 	@echo "* test         > Evaluates the neural network on the test set.         "
-	@echo "* session      > Trains the model for $(EPOCHS) epoch(s) then tests.   "
 	@echo "* backup       > Saves current training state.                         "
 	@echo "* restore      > Replaces training state with the backup.              "
 	@echo "* refresh      > Deletes file containing optimizer state.              "
@@ -61,32 +70,33 @@ build: bin/trainer bin/tester
 	@echo "Finished building training and test utilities!"
 
 run:
-	@echo "Sessions Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session.\n"
+	@mkdir -p $(RESULT_DIR)
+	@echo "-----------------------------------------------------------------------------" $(OUTPUT)
+	@echo "Sessions Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session." $(OUTPUT)
+	@echo "-----------------------------------------------------------------------------\n" $(OUTPUT)
 	@for i in $(shell seq 1 $(SESSIONS)); do \
-		echo "Session $$i started..."; \
-		$(MAKE) backup; \
-		$(MAKE) train EPOCHS=$(EPOCHS) BATCH=$(BATCH) ALPHA=$(ALPHA) WORKERS=$(WORKERS); \
-		$(MAKE) test WORKERS=$(WORKERS); \
-		echo "Session $$i completed!\n"; \
+		echo "Session $$i started..." $(OUTPUT); \
+		make backup 1>/dev/null 2>&1; \
+		echo "Backup Complete!" $(OUTPUT); \
+		make train EPOCHS=$(EPOCHS) BATCH=$(BATCH) ALPHA=$(ALPHA) WORKERS=$(WORKERS) 1>/dev/null 2>&1; \
+		echo "$(EPOCHS) training epoch(s) completed!" $(OUTPUT); \
+		make test WORKERS=$(WORKERS) 1>/dev/null 2>&1; \
+		echo "Testing Complete!" $(OUTPUT); \
+		echo "Session $$i completed!\n" $(OUTPUT); \
 	done
-	@echo "$(SESSIONS) training session(s) were completed successfully!\n"
+	@echo "$(SESSIONS) training session(s) were completed successfully!\n" $(OUTPUT)
 
 train:
 	@mkdir -p $(RESULT_DIR)
+	@echo "Training neural network..."
 	@./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
 	@echo "$(EPOCHS) training epoch(s) completed!"
 
 test:
 	@mkdir -p $(RESULT_DIR)
+	@echo "Testing neural network..."
 	@./bin/tester workers $(WORKERS)
-	@echo "Testing completed!"
-
-session:
-	@mkdir -p $(RESULT_DIR)
-	@echo "Session started..."
-	@$(MAKE) train EPOCHS=$(EPOCHS) BATCH=$(BATCH) ALPHA=$(ALPHA) WORKERS=$(WORKERS)
-	@$(MAKE) test WORKERS=$(WORKERS)
-	@echo "Session completed!\n"
+	@echo "Testing Complete!"
 
 backup:
 	@$(call copy, $(RESULT_DIR), $(BACKUP_DIR))
@@ -102,7 +112,7 @@ refresh:
 	@echo "Training state refreshed successfully!"
 
 reset:
-	@rm -rf result backup
+	@rm -rf result
 	@echo "Training state has been reset successfully!"
 
 clean:
@@ -112,7 +122,7 @@ clean:
 # -------------------------- private --------------------------
 
 _lib:
-	@$(MAKE) -C $(LOGICNN_PROJECT_ROOT) BUILD_DIR=$(CURDIR)/build/LogicNN LIB_DIR=$(CURDIR)/lib/LogicNN release >/dev/null
+	@$(MAKE) -C $(LOGICNN_PROJECT_ROOT) ALIGN=TRUE BUILD_DIR=$(CURDIR)/build/LogicNN LIB_DIR=$(CURDIR)/lib/LogicNN release >/dev/null
 
 bin/trainer: _lib $(TRAINER_OBJ) $(TRAINER_HDR)
 	@mkdir -p bin
