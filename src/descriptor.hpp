@@ -16,8 +16,8 @@
 #include "policy.hpp"
 
 #define EDGE_COUNT 7
-#define ATTRIBUTE_COUNT 20
-#define NODE_COUNT 25
+#define ATTRIBUTE_COUNT 22
+#define NODE_COUNT 110
 
 struct board
 {
@@ -44,9 +44,9 @@ private:
 	const board b;
     move moves_[128];
     const int mcount_;
-	nn_uint16_t attributes_data[NODE_COUNT][ATTRIBUTE_COUNT];
-	nn_relation_t relations[NODE_COUNT][12];
-	nn_pair_t pairs[EDGE_COUNT][90];
+	nn_uint16_t attributes_data[NODE_COUNT][4];
+	nn_relation_t relations[NODE_COUNT][8];
+	nn_pair_t pairs[EDGE_COUNT][300];
 	nn_edge_t edges[EDGE_COUNT];
 	nn_node_t nodes[NODE_COUNT];
 
