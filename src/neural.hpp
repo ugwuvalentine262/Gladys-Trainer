@@ -18,7 +18,11 @@
 #include "descriptor.hpp"
 #include "policy.hpp"
 
-#define EMBEDDING_DIM 32
+#define EMBEDDING_DIM 16
+
+#if (!EMBEDDING_DIM || ((EMBEDDING_DIM & (EMBEDDING_DIM - 1)) != 0))
+    #error "Embedding dimension must be a power of 2."
+#endif
 
 #define MATRIX_SIZE (EMBEDDING_DIM*EMBEDDING_DIM)
 #define LAYER_PARAM_SIZE (MATRIX_SIZE * 2 * EDGE_COUNT)
@@ -32,7 +36,7 @@
 #define WDL_PARAM_OFFSET (LAYER4b_PARAM_OFFSET + LAYER_PARAM_SIZE)
 #define WDL_BIAS_OFFSET (WDL_PARAM_OFFSET + EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
 #define POLICY_PARAM_OFFSET (WDL_BIAS_OFFSET + 3)
-#define PARAM_COUNT (POLICY_PARAM_OFFSET + 0)
+#define PARAM_COUNT (POLICY_PARAM_OFFSET + MATRIX_SIZE * 14)
 #define ATTENTION_OFFSET (MATRIX_SIZE * EDGE_COUNT)
 
 using value=float;
@@ -75,6 +79,8 @@ private:
 	const nn_float_t *wdl_;
     const nn_float_t *wdl_b_;
     const nn_float_t *policy_;
+    const nn_float_t *fph_[7];
+    const nn_float_t *tph_[7];
 
     alignas(16) nn_float_t X1[NODE_COUNT][EMBEDDING_DIM];
     alignas(16) nn_float_t X2[NODE_COUNT][EMBEDDING_DIM];

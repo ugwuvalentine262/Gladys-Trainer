@@ -85,7 +85,7 @@ error loss::forward(const neural_output& y_hat, const neural_output& y)
 {
 	return  error(
 					mse::forward(y_hat.v, y.v)
-				,   cce::forward(y_hat.z, y.z)
+				,   0//cce::forward(y_hat.z, y.z)
 				,   y_hat.z == y.z ? 1 : 0
 			);
 }
@@ -94,6 +94,6 @@ neural_output loss::backward(const neural_output& y_hat, const neural_output& y)
 {
 	return  neural_output(
 					mse::backward(y_hat.v, y.v)
-				,   cce::backward(y_hat.z, y.z)
+				,   logits()//cce::backward(y_hat.z, y.z)
 			);
 }

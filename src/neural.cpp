@@ -9,8 +9,8 @@
 #include <Eigen/Dense>
 #include <string>
 
-#include <neural.hpp>
-#include <descriptor.hpp>
+#include "neural.hpp"
+#include "descriptor.hpp"
 
 #define INIT_MESSAGE_PASSER(_a) \
     mp##_a##_ { \
@@ -125,7 +125,8 @@ static void softmax_backprop(
     auto dot= y_.dot(dxy);
 
     dxy.array() -= dot;
-    dxy *= y_;
+
+    dxy.array() *= y_.array();
 }
 
 void softmax
@@ -170,6 +171,7 @@ neural_output forward_pass::operator()(const descriptor& d)
 {
     d_=&d;
 
+    //auto moves=(const move*)d.moves_;
     logits p;
 
     alignas(16) float Y[NODE_COUNT][EMBEDDING_DIM];
@@ -203,20 +205,20 @@ neural_output forward_pass::operator()(const descriptor& d)
 
     mp4a_temp_.resize(required);
     //mp4b_temp_.resize(required);
-    std::memcpy(X4a[0], Y, sizeof(Y));
-    //std::memcpy(X4b[0], Y, sizeof(Y));
+    std::memcpy(X4a, Y, sizeof(Y));
+    //std::memcpy(X4b, Y, sizeof(Y));
     nn_msg_pass(&mp4a_, &d.graphnet, X4a[0], Y[0], mp4a_temp_.data());
 
     friends.setConstant(-9E9);
     enemies.setConstant(-9e9);
 
-    for (int s=0; s< 64; s++)
+    for (auto s=0; s< 64; s++)
     {
         if (d.b.mailbox[s]!=0)
         {
             if (d.b.mailbox[s] & 0x8) 
             {
-                for (int i = 0; i < EMBEDDING_DIM; i++)
+                for (auto i = 0; i < EMBEDDING_DIM; i++)
                 {
                     if (Y[s][i] > enemies[i])
                     {
@@ -226,7 +228,7 @@ neural_output forward_pass::operator()(const descriptor& d)
                 }
             }
             else {
-                for (int i = 0; i < EMBEDDING_DIM; i++)
+                for (auto i = 0; i < EMBEDDING_DIM; i++)
                 {
                     if (Y[s][i] > friends[i])
                     {
@@ -240,11 +242,9 @@ neural_output forward_pass::operator()(const descriptor& d)
 
     //nn_msg_pass(&mp4b_, &d.graphnet, X4b[0], Y[0], mp4b_temp_.data());
     y.noalias() = WDL * x;
-
     win += wdl_b_[0];
     draw += wdl_b_[1];
     loss += wdl_b_[2];
-
     auto max = std::max(win, std::max(draw, loss));
 
     win = std::exp(win - max);
@@ -273,8 +273,26 @@ forward_pass::forward_pass(const float params[])
     ,   INIT_MESSAGE_PASSER(4a)
     ,   INIT_MESSAGE_PASSER(4b)
     ,   wdl_(params+WDL_PARAM_OFFSET)
-    ,   wdl_b_(wdl_+ EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
-    ,   policy_(wdl_b_+3)
+    ,   wdl_b_(wdl_+EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
+    ,   policy_(params+POLICY_PARAM_OFFSET)
+    ,   fph_ {
+                policy_+MATRIX_SIZE*0x0
+            ,   policy_+MATRIX_SIZE*0x1
+            ,   policy_+MATRIX_SIZE*0x2
+            ,   policy_+MATRIX_SIZE*0x3
+            ,   policy_+MATRIX_SIZE*0x4
+            ,   policy_+MATRIX_SIZE*0x5
+            ,   policy_+MATRIX_SIZE*0x6
+        }
+    ,   tph_ {
+                policy_+MATRIX_SIZE*0x7
+            ,   policy_+MATRIX_SIZE*0x8
+            ,   policy_+MATRIX_SIZE*0x9
+            ,   policy_+MATRIX_SIZE*0xA
+            ,   policy_+MATRIX_SIZE*0xB
+            ,   policy_+MATRIX_SIZE*0xC
+            ,   policy_+MATRIX_SIZE*0xD
+        }
     ,   X1 {}
     ,   X2 {}
     ,   X3 {}
@@ -294,6 +312,7 @@ forward_pass::forward_pass(const float params[])
 void backward_pass::operator()(const neural_output& dEdy, float grad[])
 {
     alignas(16) float dY[NODE_COUNT][EMBEDDING_DIM]={};
+    //alignas(16) float dH[NODE_COUNT][EMBEDDING_DIM]={};
     alignas(16) float dX[NODE_COUNT][EMBEDDING_DIM]={};
     alignas(16) float dy[3] = {dEdy.v, 0, -dEdy.v};
     alignas(16) float dy_mp[EMBEDDING_DIM * 2];
@@ -330,7 +349,7 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
         ,   dy
         ,   dy_mp
         ,   1
-        ,   3
+        ,   WDL_OUTPUT_DIM
         ,   2 * EMBEDDING_DIM
     );
 
@@ -343,9 +362,13 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
     temp_.resize(fpass_.mp1_temp_.size());
 
     MESSAGE_BACKWARD(4a);
-    MESSAGE_BACKWARD(3 );
-    MESSAGE_BACKWARD(2 );
-    MESSAGE_BACKWARD(1 );
+
+    //std::memcpy(dH, dY, sizeof(dY));
+    //MESSAGE_BACKWARD(4b);
+    //accumulate(dY[0], dH[0], NODE_COUNT*EMBEDDING_DIM);
+    MESSAGE_BACKWARD(3);
+    MESSAGE_BACKWARD(2);
+    MESSAGE_BACKWARD(1);
 
     nn_embedding_backprop(
             &fpass_.emb_
