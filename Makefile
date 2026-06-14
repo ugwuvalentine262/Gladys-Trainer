@@ -81,7 +81,7 @@ run:
 		echo "Backup Complete!" $(OUTPUT); \
 		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS); \
 		echo "$(EPOCHS) training epoch(s) completed!" $(OUTPUT); \
-		./bin/tester workers $(WORKERS)
+		./bin/tester workers $(WORKERS) \
 		echo "Testing Complete!" $(OUTPUT); \
 		echo "Session $$i completed!\n" $(OUTPUT); \
 		i=$$((i+1)); \
