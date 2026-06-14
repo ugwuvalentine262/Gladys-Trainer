@@ -6,7 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
-#include <iostream>
+#include <chrono>
 #include <Eigen/Dense>
 #include <fstream>
 #include <ctime>
@@ -213,6 +213,7 @@ int main(int argc, char *argv[])
 	auto batch=50;
 	auto alpha=0.001f;
 	auto workers=4u;
+    auto break_duration=0;
 
 	std::queue<std::string> args(
 			std::deque<std::string>(argv + 1, argv + argc)
@@ -260,6 +261,9 @@ int main(int argc, char *argv[])
 		else if (arg=="workers") {
 			workers= static_cast<unsigned>(x);
 		}
+        else if (arg=="break") {
+            break_duration =static_cast<unsigned>(x);
+        }
 		else {
 			log << "Unknown parameter: " << arg << std::endl;
 		}
@@ -270,5 +274,7 @@ int main(int argc, char *argv[])
 	for (auto i=0; i< epochs; i++) 
 	{
 		trainer.train();
+
+        std::this_thread::sleep_for(std::chrono::seconds(break_duration));
 	}
 }

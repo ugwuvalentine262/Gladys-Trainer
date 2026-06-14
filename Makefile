@@ -6,6 +6,7 @@ SESSIONS := 1
 WORKERS := 4
 ALPHA := 0.001
 BATCH := 50
+BREAK := 10
 LOG ?= FALSE
 
 override CXX := g++
@@ -79,7 +80,7 @@ run:
 		echo "Session $$i started..." $(OUTPUT); \
 		make backup 1>/dev/null 2>&1; \
 		echo "Backup Complete!" $(OUTPUT); \
-		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS); \
+		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS) break $(BREAK); \
 		echo "$(EPOCHS) training epoch(s) completed!" $(OUTPUT); \
 		./bin/tester workers $(WORKERS) \
 		echo "Testing Complete!" $(OUTPUT); \
@@ -91,7 +92,7 @@ run:
 epoch:
 	@mkdir -p $(RESULT_DIR)
 	@echo "Training neural network..."
-	@./bin/trainer epochs 1 batch $(BATCH) alpha $(ALPHA) workers $(WORKERS)
+	@./bin/trainer epochs 1 batch $(BATCH) alpha $(ALPHA) workers $(WORKERS) break $(BREAK)
 	@echo "1 training epoch completed!"
 
 eval:
