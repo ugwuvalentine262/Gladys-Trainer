@@ -201,13 +201,12 @@ neural_output forward_pass::operator()(const descriptor& d)
 
     MESSAGE_PASSING(1);
     MESSAGE_PASSING(2);
-    MESSAGE_PASSING(3);
 
-    mp4a_temp_.resize(required);
-    //mp4b_temp_.resize(required);
-    std::memcpy(X4a, Y, sizeof(Y));
-    //std::memcpy(X4b, Y, sizeof(Y));
-    nn_msg_pass(&mp4a_, &d.graphnet, X4a[0], Y[0], mp4a_temp_.data());
+    mp3a_temp_.resize(required);
+    //mp3b_temp_.resize(required);
+    std::memcpy(X3a, Y, sizeof(Y));
+    //std::memcpy(X3b, Y, sizeof(Y));
+    nn_msg_pass(&mp3a_, &d.graphnet, X3a[0], Y[0], mp3a_temp_.data());
 
     friends.setConstant(-9E9);
     enemies.setConstant(-9e9);
@@ -240,7 +239,7 @@ neural_output forward_pass::operator()(const descriptor& d)
         }
     }
 
-    //nn_msg_pass(&mp4b_, &d.graphnet, X4b[0], Y[0], mp4b_temp_.data());
+    //nn_msg_pass(&mp3b_, &d.graphnet, X3b[0], Y[0], mp3b_temp_.data());
     y.noalias() = WDL * x;
     win += wdl_b_[0];
     draw += wdl_b_[1];
@@ -269,44 +268,23 @@ forward_pass::forward_pass(const float params[])
         }
     ,   INIT_MESSAGE_PASSER(1)
     ,   INIT_MESSAGE_PASSER(2)
-    ,   INIT_MESSAGE_PASSER(3)
-    ,   INIT_MESSAGE_PASSER(4a)
-    ,   INIT_MESSAGE_PASSER(4b)
+    ,   INIT_MESSAGE_PASSER(3a)
+    ,   INIT_MESSAGE_PASSER(3b)
     ,   wdl_(params+WDL_PARAM_OFFSET)
     ,   wdl_b_(wdl_+EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
     ,   policy_(params+POLICY_PARAM_OFFSET)
-    ,   fph_ {
-                policy_+MATRIX_SIZE*0x0
-            ,   policy_+MATRIX_SIZE*0x1
-            ,   policy_+MATRIX_SIZE*0x2
-            ,   policy_+MATRIX_SIZE*0x3
-            ,   policy_+MATRIX_SIZE*0x4
-            ,   policy_+MATRIX_SIZE*0x5
-            ,   policy_+MATRIX_SIZE*0x6
-        }
-    ,   tph_ {
-                policy_+MATRIX_SIZE*0x7
-            ,   policy_+MATRIX_SIZE*0x8
-            ,   policy_+MATRIX_SIZE*0x9
-            ,   policy_+MATRIX_SIZE*0xA
-            ,   policy_+MATRIX_SIZE*0xB
-            ,   policy_+MATRIX_SIZE*0xC
-            ,   policy_+MATRIX_SIZE*0xD
-        }
     ,   X1 {}
     ,   X2 {}
-    ,   X3 {}
-    ,   X4a {}
-    ,   X4b {}
+    ,   X3a {}
+    ,   X3b {}
     ,   Xwdl {}
     ,   fcont_ {}
     ,   econt_ {}
     ,   d_(0)
     ,   mp1_temp_ {}
     ,   mp2_temp_ {}
-    ,   mp3_temp_ {}
-    ,   mp4a_temp_ {}
-    ,   mp4b_temp_ {}
+    ,   mp3a_temp_ {}
+    ,   mp3b_temp_ {}
 {}
 
 void backward_pass::operator()(const neural_output& dEdy, float grad[])
@@ -361,12 +339,11 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
 
     temp_.resize(fpass_.mp1_temp_.size());
 
-    MESSAGE_BACKWARD(4a);
+    MESSAGE_BACKWARD(3a);
 
     //std::memcpy(dH, dY, sizeof(dY));
-    //MESSAGE_BACKWARD(4b);
+    //MESSAGE_BACKWARD(3b);
     //accumulate(dY[0], dH[0], NODE_COUNT*EMBEDDING_DIM);
-    MESSAGE_BACKWARD(3);
     MESSAGE_BACKWARD(2);
     MESSAGE_BACKWARD(1);
 
