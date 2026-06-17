@@ -35,8 +35,6 @@ void trainer::train()
 
 		if (batch_.size()==batch_size_)
 		{
-            std::ofstream file(NNFILE, std::ios::binary);
-
             batch_ready_=true;
             rem_=batch_.size();
 
@@ -58,17 +56,18 @@ void trainer::train()
 			adam_.step();
 			adam_.zero_grad();
 
-	        if (!file) {
+            for (const auto& p : params_.data)
+            {
+		        if (std::isnan(p) || std::isinf(p))
+                {
+                    log_ 
+                        << "Undefined neural network parameters."
+                        << std::endl;
 
-		        log_ 
-			        << "Unable to save neural network to file."
-			        << std::endl;
+                    std::exit(EXIT_FAILURE);
+                }
+            }
 
-		        std::exit(EXIT_FAILURE);
-	        }
-
-	        write(file, params_.data, PARAM_COUNT);
-	        adam_.save();
 		}
 	}
 
@@ -110,17 +109,19 @@ void trainer::train()
 		<< elapsed.sec
         << std::endl;
 
-    for (const auto& p : params_.data)
-    {
-		if (std::isnan(p) || std::isinf(p))
-        {
-            log_ 
-                 << "Undefined neural network parameters."
-                 << std::endl;
+    std::ofstream file(NNFILE, std::ios::binary);
 
-            std::exit(EXIT_FAILURE);
-        }
-    }
+    if (!file) {
+
+		log_ 
+	        << "Unable to save neural network to file."
+			<< std::endl;
+
+	    std::exit(EXIT_FAILURE);
+	}
+
+	write(file, params_.data, PARAM_COUNT);
+	adam_.save();
 }
 
 trainer::~trainer()
