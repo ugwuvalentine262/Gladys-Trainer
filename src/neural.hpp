@@ -18,10 +18,10 @@
 #include "descriptor.hpp"
 #include "policy.hpp"
 
-#define EMBEDDING_DIM 16
+#define EMBEDDING_DIM 32
 
-#if (!EMBEDDING_DIM || ((EMBEDDING_DIM & (EMBEDDING_DIM - 1)) != 0))
-    #error "Embedding dimension must be a power of 2."
+#if ((EMBEDDING_DIM <= 0) || (EMBEDDING_DIM % 4))
+    #error "Embedding dimension must be a multiple of 4"
 #endif
 
 #define MATRIX_SIZE (EMBEDDING_DIM*EMBEDDING_DIM)
