@@ -58,6 +58,7 @@ help:
 	@echo "make commands                                                          "
 	@echo "-----------------------------------------------------------------------"
 	@echo "* build        > Builds training and test utilities for the model.     "
+	@echo "* rebuild      > Rebuilds everything from scratch.                     "
 	@echo "* run          > Runs $(SESSIONS) session(s) of training.              "
 	@echo "* epoch        > Trains the model for a single epoch.                  "
 	@echo "* eval         > Evaluates the neural network on the test set.         "
@@ -69,6 +70,10 @@ help:
 	@echo "-----------------------------------------------------------------------"
 
 build: bin/trainer bin/tester
+	@echo "Finished building training and test utilities!"
+
+rebuild: bin/trainer bin/tester
+	@rm -rf build bin lib
 	@echo "Finished building training and test utilities!"
 
 run:
