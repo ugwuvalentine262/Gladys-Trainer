@@ -443,3 +443,16 @@ nn_void_t nn_insert_relation(
         ,   node_A
     );
 }
+
+nn_void_t nn_insert_link(
+            nn_edge_t * const relation
+        ,   nn_node_t * const node_to
+        ,   nn_node_t * const node_from
+    )
+{
+    nn_add_relation(
+            relation
+        ,   node_to
+        ,   node_from
+    );
+}

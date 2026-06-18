@@ -168,6 +168,13 @@ extern nn_void_t nn_insert_relation
         ,   nn_node_t * const node_B
     );
 
+extern nn_void_t nn_insert_link
+    (
+            nn_edge_t * const relation
+        ,   nn_node_t * const node_to
+        ,   nn_node_t * const node_from
+    );
+
 extern nn_void_t nn_accumulate
     (
             nn_float_t       data[]
