@@ -26,10 +26,10 @@ override EIGEN_INCLUDE_DIR := $(CURDIR)/external/Eigen
 override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++23 -O2 -O3 -mavx -mfma 
 override LDFLAGS := -L$(CURDIR)/lib/LogicNN/release -llogicnn_backprop -llogicnn -lm
 override TRAINER_SRC := $(filter-out src/tester.cpp, $(wildcard src/*.cpp))
-override TRAINER_HDR := $(filter-out include/tester.hpp, $(wildcard include/*.hpp))
+override TRAINER_HDR := $(filter-out src/tester.hpp, $(wildcard src/*.hpp))
 override TRAINER_OBJ := $(addprefix build/trainer/, $(TRAINER_SRC:src/%.cpp=%.o))
 override TESTER_SRC := $(filter-out src/trainer.cpp src/adam.cpp, $(wildcard src/*.cpp))
-override TESTER_HDR := $(filter-out include/trainer.hpp include/adam.hpp, $(wildcard include/*.hpp))
+override TESTER_HDR := $(filter-out src/trainer.hpp src/adam.hpp, $(wildcard src/*.hpp))
 override TESTER_OBJ := $(addprefix build/tester/, $(TESTER_SRC:src/%.cpp=%.o))
 
 ifeq ($(LOG), TRUE)
@@ -74,12 +74,13 @@ help:
 build: bin/trainer bin/tester
 	@echo "Finished building training and test utilities!"
 
-rebuild: bin/trainer bin/tester
+rebuild:
 	@rm -rf build bin lib
+	@$(MAKE) build >/dev/null 2>&1
 	@echo "Finished building training and test utilities!"
 
 init:
-	@rm -rf result
+	@rm -rf $(RESULT_DIR)
 	@mkdir -p $(RESULT_DIR)
 	@./bin/trainer epochs 0 workers 1
 
