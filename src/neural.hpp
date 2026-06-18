@@ -18,7 +18,7 @@
 #include "descriptor.hpp"
 #include "policy.hpp"
 
-#define EMBEDDING_DIM 32
+#define EMBEDDING_DIM 16
 
 #if ((EMBEDDING_DIM <= 0) || (EMBEDDING_DIM % 4))
     #error "Embedding dimension must be a multiple of 4"
