@@ -43,6 +43,7 @@ endif
 # -------------------------- macros --------------------------
 
 define copy
+	@rm -rf $(2)
 	@mkdir -p $(2)
 	@cp $(1)/$(NNFILE)   $(2)/$(NNFILE)   2>/dev/null || true
 	@cp $(1)/$(ADAMFILE) $(2)/$(ADAMFILE) 2>/dev/null || true
@@ -59,6 +60,7 @@ help:
 	@echo "-----------------------------------------------------------------------"
 	@echo "* build        > Builds training and test utilities for the model.     "
 	@echo "* rebuild      > Rebuilds everything from scratch.                     "
+	@echo "* init         > Initializes the parameters of the model.              "
 	@echo "* run          > Runs $(SESSIONS) session(s) of training.              "
 	@echo "* epoch        > Trains the model for a single epoch.                  "
 	@echo "* eval         > Evaluates the neural network on the test set.         "
@@ -75,6 +77,11 @@ build: bin/trainer bin/tester
 rebuild: bin/trainer bin/tester
 	@rm -rf build bin lib
 	@echo "Finished building training and test utilities!"
+
+init:
+	@rm -rf result
+	@mkdir -p $(RESULT_DIR)
+	@./bin/trainer epochs 0 workers 1
 
 run:
 	@mkdir -p $(RESULT_DIR)
@@ -149,4 +156,4 @@ build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@$(CXX) $(CXXFLAGS) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
-.PHONY: help build run epoch eval backup restore refresh reset clean
+.PHONY: help build rebuild init run epoch eval backup restore refresh reset clean
