@@ -182,14 +182,16 @@ trainer::trainer(
 		adam_.reset();
 	}
 
-	std::ifstream file(NNFILE, std::ios::binary);
+	std::ifstream ifile(NNFILE, std::ios::binary);
 
-	if (file) {
-		read(file, params_.data, PARAM_COUNT);
+	if (ifile) {
+		read(ifile, params_.data, PARAM_COUNT);
 	}
 
-	if (!file || file.eof())
+	if (!ifile || ifile.eof())
 	{
+        std::ofstream ofile(NNFILE, std::ios::binary);
+
 		auto bias=params_.data+WDL_BIAS_OFFSET;
 
 		for (int i=0; i < PARAM_COUNT; i++)
@@ -205,6 +207,17 @@ trainer::trainer(
 			<< PARAM_COUNT 
 			<< " parameters of neural network.\n"
 			<< std::endl;
+
+        if (!ofile) {
+
+		    log 
+	            << "Unable to save neural network to file."
+			    << std::endl;
+
+	        std::exit(EXIT_FAILURE);
+	    }
+
+	    write(ofile, params_.data, PARAM_COUNT);
 	}
 }
 
