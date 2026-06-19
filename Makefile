@@ -23,7 +23,7 @@ override TESTSET_DIR := $(DATASET_DIR)/testset
 override LOGICNN_PROJECT_ROOT := $(CURDIR)/external/LogicNN
 override LOGICNN_INCLUDE_DIR := $(LOGICNN_PROJECT_ROOT)/include
 override EIGEN_INCLUDE_DIR := $(CURDIR)/external/Eigen
-override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++23 -O2 -O3 -mavx -mfma 
+override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++23 -O3 -march=native
 override LDFLAGS := -L$(CURDIR)/lib/LogicNN/release -llogicnn_backprop -llogicnn -lm
 override TRAINER_SRC := $(filter-out src/tester.cpp, $(wildcard src/*.cpp))
 override TRAINER_HDR := $(filter-out src/tester.hpp, $(wildcard src/*.hpp))
