@@ -8,7 +8,7 @@
 
 #include <fstream>
 #include <iomanip>
-#include <ctime>
+#include <chrono>
 #include <cstdlib>
 #include <string>
 
@@ -78,6 +78,8 @@ tester::tester(
 {
 	std::ifstream file(NNFILE, std::ios::binary);
 
+    using clock = std::chrono::steady_clock;
+
 	for (const auto& sample : dataset_)
 	{
 		stack_.emplace(sample);
@@ -108,18 +110,18 @@ tester::tester(
 		threads_.emplace_back(&tester::iterator, this);
 	}
 
-	auto start = std::time(nullptr);
+	auto start = clock::now();
 
     std::unique_lock<std::mutex> lock(mtx_);
 	cv_.wait(lock, [this]() { return rem_==0; });
 
-	auto end = std::time(nullptr);
+	auto end = clock::now();
 
 	auto mse_error = mse_sum_ / dataset_.size();
 	auto cce_error = cce_sum_ / dataset_.size();
 	auto accuracy = acc_sum_ / dataset_.size();
 
-	size_t seconds = std::difftime(end, start);
+	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
 	struct { int hr, min, sec; } elapsed;
 

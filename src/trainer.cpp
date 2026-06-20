@@ -9,7 +9,7 @@
 #include <chrono>
 #include <Eigen/Dense>
 #include <fstream>
-#include <ctime>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
@@ -23,9 +23,11 @@
 
 void trainer::train()
 {
-    dataset_.shuffle();
+    using clock = std::chrono::steady_clock;
 
-	auto start = std::time(nullptr);
+	auto start = clock::now();
+
+    dataset_.shuffle();
 
 	mse_sum_=cce_sum_=acc_sum_=0;
 
@@ -71,13 +73,13 @@ void trainer::train()
 		}
 	}
 
-	auto end = std::time(nullptr);
+	auto end = clock::now();
 
 	auto mse_error = mse_sum_ / dataset_.size();
 	auto cce_error = cce_sum_ / dataset_.size();
 	auto accuracy = acc_sum_ / dataset_.size();
 
-	size_t seconds = std::difftime(end, start);
+	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
 	struct { int hr, min, sec; } elapsed;
 
