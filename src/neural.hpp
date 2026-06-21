@@ -18,8 +18,8 @@
 #include "descriptor.hpp"
 #include "policy.hpp"
 
-#if ((EMBEDDING_DIM <= 0) || (EMBEDDING_DIM % 4))
-    #error "Embedding dimension must be a multiple of 4"
+#if ((EMBEDDING_DIM <= 0) || (EMBEDDING_DIM % 8))
+    #error "Embedding dimension must be a multiple of 8"
 #endif
 
 #define MATRIX_SIZE (EMBEDDING_DIM*EMBEDDING_DIM)
