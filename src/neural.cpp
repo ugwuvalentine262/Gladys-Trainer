@@ -177,14 +177,11 @@ neural_output forward_pass::operator()(const descriptor& d)
     alignas(16) float Y[NODE_COUNT][EMBEDDING_DIM];
 
     Eigen::Map<
-            const Eigen::Matrix<float, 3, EMBEDDING_DIM * 2, Eigen::RowMajor>
+            const Eigen::Matrix<float, 3, EMBEDDING_DIM, Eigen::RowMajor>
         > WDL(wdl_);
 
-    Eigen::Map<const Eigen::Matrix<float, EMBEDDING_DIM * 2, 1>> x(Xwdl);
+    Eigen::Map<const Eigen::Matrix<float, EMBEDDING_DIM, 1>> x(Xwdl);
     Eigen::Map<Eigen::Vector3f> y(y_wdl);
-
-    Eigen::Map<Eigen::VectorXf> friends(Xwdl, EMBEDDING_DIM);
-    Eigen::Map<Eigen::VectorXf> enemies(Xwdl+EMBEDDING_DIM, EMBEDDING_DIM);
 
     auto& win=y[0];
     auto& draw=y[1];
@@ -201,49 +198,17 @@ neural_output forward_pass::operator()(const descriptor& d)
 
     MESSAGE_PASSING(1);
     MESSAGE_PASSING(2);
+    MESSAGE_PASSING(3);
+    MESSAGE_PASSING(4);
 
-    mp3a_temp_.resize(required);
-    //mp3b_temp_.resize(required);
-    std::memcpy(X3a, Y, sizeof(Y));
-    //std::memcpy(X3b, Y, sizeof(Y));
-    nn_msg_pass(&mp3a_, &d.graphnet, X3a[0], Y[0], mp3a_temp_.data());
+    std::memcpy(Xwdl, Y[G1], sizeof(float) * EMBEDDING_DIM);
 
-    friends.setConstant(-9E9);
-    enemies.setConstant(-9e9);
-
-    for (auto s=0; s< 64; s++)
-    {
-        if (d.b.mailbox[s]!=0)
-        {
-            if (d.b.mailbox[s] & 0x8) 
-            {
-                for (auto i = 0; i < EMBEDDING_DIM; i++)
-                {
-                    if (Y[s][i] > enemies[i])
-                    {
-                        enemies[i] = Y[s][i];
-                        econt_[i] = s;
-                    }
-                }
-            }
-            else {
-                for (auto i = 0; i < EMBEDDING_DIM; i++)
-                {
-                    if (Y[s][i] > friends[i])
-                    {
-                        friends[i] = Y[s][i];
-                        fcont_[i] = s;
-                    }
-                }
-            }
-        }
-    }
-
-    //nn_msg_pass(&mp3b_, &d.graphnet, X3b[0], Y[0], mp3b_temp_.data());
     y.noalias() = WDL * x;
+
     win += wdl_b_[0];
     draw += wdl_b_[1];
     loss += wdl_b_[2];
+
     auto max = std::max(win, std::max(draw, loss));
 
     win = std::exp(win - max);
@@ -268,35 +233,29 @@ forward_pass::forward_pass(const float params[])
         }
     ,   INIT_MESSAGE_PASSER(1)
     ,   INIT_MESSAGE_PASSER(2)
-    ,   INIT_MESSAGE_PASSER(3a)
-    ,   INIT_MESSAGE_PASSER(3b)
+    ,   INIT_MESSAGE_PASSER(3)
+    ,   INIT_MESSAGE_PASSER(4)
     ,   wdl_(params+WDL_PARAM_OFFSET)
-    ,   wdl_b_(wdl_+EMBEDDING_DIM * 2 * WDL_OUTPUT_DIM)
+    ,   wdl_b_(params+WDL_BIAS_OFFSET)
     ,   policy_(params+POLICY_PARAM_OFFSET)
     ,   X1 {}
     ,   X2 {}
-    ,   X3a {}
-    ,   X3b {}
+    ,   X3 {}
+    ,   X4 {}
     ,   Xwdl {}
-    ,   fcont_ {}
-    ,   econt_ {}
     ,   d_(0)
     ,   mp1_temp_ {}
     ,   mp2_temp_ {}
-    ,   mp3a_temp_ {}
-    ,   mp3b_temp_ {}
+    ,   mp3_temp_ {}
+    ,   mp4_temp_ {}
 {}
 
 void backward_pass::operator()(const neural_output& dEdy, float grad[])
 {
     alignas(16) float dY[NODE_COUNT][EMBEDDING_DIM]={};
-    //alignas(16) float dH[NODE_COUNT][EMBEDDING_DIM]={};
     alignas(16) float dX[NODE_COUNT][EMBEDDING_DIM]={};
     alignas(16) float dy[3] = {dEdy.v, 0, -dEdy.v};
-    alignas(16) float dy_mp[EMBEDDING_DIM * 2];
-
-    float *friends = dy_mp;
-    float *enemies = dy_mp + EMBEDDING_DIM;
+    alignas(16) float dy_mp[EMBEDDING_DIM];
 
     auto dot = dy[0] * fpass_.y_wdl[0]
             +  dy[2] * fpass_.y_wdl[2];
@@ -312,11 +271,11 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
     Eigen::Map<const Eigen::Vector3f> dy_(dy);
 
     Eigen::Map<
-            const Eigen::Matrix<float, 1, EMBEDDING_DIM * 2>
+            const Eigen::Matrix<float, 1, EMBEDDING_DIM>
         > x(fpass_.Xwdl);
 
     Eigen::Map<
-            Eigen::Matrix<float, 3, EMBEDDING_DIM * 2, Eigen::RowMajor>
+            Eigen::Matrix<float, 3, EMBEDDING_DIM, Eigen::RowMajor>
         > dWDL(grad + WDL_PARAM_OFFSET);
 
     dWDL.noalias() = dy_ * x;
@@ -328,22 +287,15 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
         ,   dy_mp
         ,   1
         ,   WDL_OUTPUT_DIM
-        ,   2 * EMBEDDING_DIM
+        ,   EMBEDDING_DIM
     );
 
-    for (int i = 0; i < EMBEDDING_DIM; i++)
-    {
-        dY[fpass_.fcont_[i]][i] = friends[i];
-        dY[fpass_.econt_[i]][i] = enemies[i];
-    }
+    std::memcpy(dY[G1], dy_mp, sizeof(float) * EMBEDDING_DIM);
 
     temp_.resize(fpass_.mp1_temp_.size());
 
-    MESSAGE_BACKWARD(3a);
-
-    //std::memcpy(dH, dY, sizeof(dY));
-    //MESSAGE_BACKWARD(3b);
-    //accumulate(dY[0], dH[0], NODE_COUNT*EMBEDDING_DIM);
+    MESSAGE_BACKWARD(4);
+    MESSAGE_BACKWARD(3);
     MESSAGE_BACKWARD(2);
     MESSAGE_BACKWARD(1);
 
