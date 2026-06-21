@@ -8,6 +8,7 @@ ALPHA := 0.001
 BATCH := 50
 BREAK := 10
 LOG ?= FALSE
+EMBEDDING ?= 8 # specified at compile-time
 
 override CXX := g++
 override BACKUP_DIR := $(CURDIR)/backup
@@ -82,7 +83,7 @@ rebuild:
 init:
 	@rm -rf $(RESULT_DIR)
 	@mkdir -p $(RESULT_DIR)
-	@./bin/trainer epochs 0 workers 1
+	@./bin/trainer epochs 0 workers 0
 
 run:
 	@mkdir -p $(RESULT_DIR)
@@ -150,11 +151,11 @@ bin/tester: _lib $(TESTER_OBJ) $(TESTER_HDR)
 
 build/trainer/%.o: src/%.cpp $(TRAINER_HDR)
 	@mkdir -p build/trainer
-	@$(CXX) $(CXXFLAGS) -DLOGFILE=\"$(RESULT_DIR)/$(TRAINLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DADAMFILE=\"$(RESULT_DIR)/$(ADAMFILE)\" -DDATASET_DIR=\"$(TRAINSET_DIR)\" -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DLOGFILE=\"$(RESULT_DIR)/$(TRAINLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DADAMFILE=\"$(RESULT_DIR)/$(ADAMFILE)\" -DDATASET_DIR=\"$(TRAINSET_DIR)\" -c $< -o $@
 
 build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@mkdir -p build/tester
-	@$(CXX) $(CXXFLAGS) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
 .PHONY: help build rebuild init run epoch eval backup restore refresh reset clean
