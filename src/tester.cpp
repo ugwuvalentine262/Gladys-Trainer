@@ -180,6 +180,11 @@ int main(int argc, char *argv[])
                 
 				log << value << " is too large\n";
 			}
+
+            if (!workers) {
+                log << "There are not workers to evaluate the model." << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
 		}
 	}
 

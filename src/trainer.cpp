@@ -289,6 +289,10 @@ int main(int argc, char *argv[])
 
 	for (auto i=0; i< epochs; i++) 
 	{
+        if (!workers) {
+            log << "There are not workers to train the model." << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
 		trainer.train();
 
         std::this_thread::sleep_for(std::chrono::seconds(break_duration));
