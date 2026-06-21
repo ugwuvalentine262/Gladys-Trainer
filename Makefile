@@ -77,7 +77,7 @@ build: bin/trainer bin/tester
 
 rebuild:
 	@rm -rf build bin lib
-	@$(MAKE) build >/dev/null 2>&1
+	@$(MAKE) build >/dev/null
 	@echo "Finished building training and test utilities!"
 
 init:
