@@ -1,13 +1,13 @@
-
 # -------------------------- variables --------------------------
 
-EPOCHS := 1
-SESSIONS := 1
-WORKERS := 4
-ALPHA := 0.001
-BATCH := 50
-BREAK := 10
-LOG ?= FALSE
+EPOCHS ?= 1
+SESSIONS ?= 1
+WORKERS ?= 4
+ALPHA ?= 0.001
+LAMBDA ?= 0.0001
+BATCH ?= 50
+BREAK ?= 0
+LOG ?= TRUE
 EMBEDDING ?= 8 # specified at compile-time
 
 override CXX := g++
@@ -94,7 +94,7 @@ run:
 		echo "Session $$i started..." $(OUTPUT); \
 		make backup 1>/dev/null 2>&1; \
 		echo "Backup Complete!" $(OUTPUT); \
-		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) workers $(WORKERS) break $(BREAK); \
+		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) lambda $(LAMBDA) workers $(WORKERS) break $(BREAK); \
 		echo "$(EPOCHS) training epoch(s) completed!" $(OUTPUT); \
 		./bin/tester workers $(WORKERS); \
 		echo "Testing Complete!" $(OUTPUT); \
@@ -106,7 +106,7 @@ run:
 epoch:
 	@mkdir -p $(RESULT_DIR)
 	@echo "Training neural network..."
-	@./bin/trainer epochs 1 batch $(BATCH) alpha $(ALPHA) workers $(WORKERS) break $(BREAK)
+	@./bin/trainer epochs 1 batch $(BATCH) alpha $(ALPHA) lambda $(LAMBDA) workers $(WORKERS) break $(BREAK)
 	@echo "1 training epoch completed!"
 
 eval:
