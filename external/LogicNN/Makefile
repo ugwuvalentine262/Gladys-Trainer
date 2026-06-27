@@ -15,7 +15,7 @@ endif
 
 override CFLAGS += -DLNN_CACHELINE=$(CACHELINE) -Werror -Wextra -Wall -std=c99 -I./include
 override DEBUG_FLAGS := $(CFLAGS) -g -O0 -DDEBUG
-override RELEASE_FLAGS := $(CFLAGS) -O2 -O3 -DNDEBUG
+override RELEASE_FLAGS := $(CFLAGS) -O3 -DNDEBUG
 override ASAN_FLAGS := $(CFLAGS) -fsanitize=address -g -O0 -DDEBUG
 
 help:
