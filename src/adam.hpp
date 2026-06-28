@@ -25,13 +25,15 @@ private:
 	parameters    momentum_;
 	parameters    velocity_;
 
-	alignas(32)  float temp1_[PARAM_COUNT];
-	alignas(32)  float temp2_[PARAM_COUNT];
+	alignas(16)  float temp1_[PARAM_COUNT];
+	alignas(16)  float temp2_[PARAM_COUNT];
+	alignas(16)  float temp3_[PARAM_COUNT];
 
 	float         discounted_beta_;
 	float         discounted_gamma_;
 
 	float   const alpha_;
+    float   const lambda_;
 	float   const beta_;
 	float   const gamma_;
 	float   const epsilon_;
@@ -48,6 +50,7 @@ public:
 			float params[]
 		,   float grad[]
 		,   float alpha=0.001
+		,   float lambda=0.0001
 		,   float beta=0.9
 		,   float gamma=0.999
 		,   float epsilon=1e-8

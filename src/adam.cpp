@@ -62,8 +62,11 @@ void adam::step()
 	Eigen::Map<Eigen::VectorXf> velocity(velocity_.data, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> temp1(temp1_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> temp2(temp2_, PARAM_COUNT);
+	Eigen::Map<Eigen::VectorXf> temp3(temp3_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> params(params_, PARAM_COUNT);
 	Eigen::Map<Eigen::VectorXf> grad(grad_, PARAM_COUNT);
+
+	std::memcpy(temp3_, params_, sizeof(float) * PARAM_COUNT);
 
 	temp1.noalias() = beta_ * momentum;
 	temp2.noalias() = (1 - beta_) * grad;
@@ -73,6 +76,7 @@ void adam::step()
 	temp1.noalias() = gamma_ * velocity;
 	temp2.array() = grad.array().square();
 	temp2.array() *= 1 - gamma_;
+	temp3.array() *= alpha_ * lambda_;
 
 	velocity.noalias() = temp1 + temp2;
 
@@ -84,6 +88,7 @@ void adam::step()
 	temp2.array() += epsilon_;
 
 	params.array() -= temp1.array() / temp2.array();
+	params.array() -= temp3.array();
 
 	discounted_gamma_ *= gamma_;
 	discounted_beta_ *= beta_;
@@ -93,6 +98,7 @@ adam::adam(
 			float params[]
 		,   float grad[]
 		,   float alpha
+		,   float lambda
 		,   float beta
 		,   float gamma
 		,   float epsilon
@@ -103,9 +109,11 @@ adam::adam(
 		,   velocity_ {}
 		,   temp1_ {}
 		,   temp2_ {}
+		,   temp3_ {}
 		,   discounted_beta_(beta)
 		,   discounted_gamma_(gamma)
 		,   alpha_(alpha)
+        ,   lambda_(lambda)
 		,   beta_(beta)
 		,   gamma_(gamma)
 		,   epsilon_(epsilon)
