@@ -15,9 +15,9 @@
 
 #include "policy.hpp"
 
-#define EDGE_COUNT 13
+#define EDGE_COUNT 15
 #define ATTRIBUTE_COUNT 22
-#define NODE_COUNT 111
+#define NODE_COUNT 113
 
 enum node_type : nn_uint_t 
 {
@@ -36,7 +36,7 @@ enum node_type : nn_uint_t
     ,   D01, D02, D03, D04, D05, D06, D07, D08, D09, D10
     ,   D11, D12, D13, D14, D15, D16, D17, D18, D19, D20
     ,   D21, D22, D23, D24, D25, D26, D27, D28, D29, D30
-    ,   G1
+    ,   G1 , G2 , G3
 };
 
 struct board
@@ -58,6 +58,7 @@ struct descriptor
 {
 	friend class backward_pass;
 	friend class forward_pass;
+    friend class policy_head;
 
 private:
 
