@@ -15,17 +15,20 @@ struct error
 {
 	error(
 			float mse_
+		,   float mae_
 		,   float cce_
 		,   float accuracy_
 	)
 		: mse(mse_)
+        , mae(mae_)
 		, cce(cce_)
 		, accuracy(accuracy_)
 	{}
 
 public:
 
-    const float mse;
+	const float mse;
+	const float mae;
 	const float cce;
 	const float accuracy;
 };

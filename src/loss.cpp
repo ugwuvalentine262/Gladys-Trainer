@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <Eigen/Dense>
+#include <cmath>
 
 #include "loss.hpp"
 #include "policy.hpp"
@@ -19,43 +20,37 @@ public:
 
 	static float forward(const logits& z, const logits& y)
 	{
-        alignas(16) float _z[128], _y[128];
+        float _z[128], _y[128], _x[128];
 
-        Eigen::Map<Eigen::VectorXf> z_(_z, z.size());
-        Eigen::Map<Eigen::VectorXf> y_(_y, y.size());
+        Eigen::Map<const Eigen::VectorXf> u(_z, z.size());
+        Eigen::Map<const Eigen::VectorXf> v(_y, y.size());
+        Eigen::Map<      Eigen::VectorXf> w(_x, y.size());
 
 		std::memcpy(_z, z.vals_data(), sizeof(float) * z.size());
 		std::memcpy(_y, y.vals_data(), sizeof(float) * y.size());
+    
+		auto max=u.maxCoeff();
 
-		auto max=z_.maxCoeff();
+		w = u.array() - max;
+		w = w.array().exp();
 
-		y_ = z_.array() - max;
-		y_ = y_.array().exp();
-
-		auto h = max + std::log(y_.sum());
-
-		z_.array() -= h;
-
-		return -z_.dot(y_);
+        return -v.dot(u) + max + std::log(w.sum());
 	}
 
 	static logits backward(const logits& z, const logits& y)
 	{
-		alignas(16) float h[128];
+		float h[128];
 
         std::memcpy(h, z.vals_data(), sizeof(float) * z.size());
 
-	    Eigen::Map<Eigen::VectorXf> p(h, z.size());
-
-	    auto max=p.maxCoeff();
-
-	    p = p.array()-max;
-	    p = p.array().exp();
-	    p /= p.sum();
-
-		Eigen::Map<Eigen::VectorXf> u(h, z.size());
  		Eigen::Map<const Eigen::VectorXf> v(y.vals_data(), y.size());
+	    Eigen::Map<      Eigen::VectorXf> u(h, z.size());
 
+	    auto max=u.maxCoeff();
+
+	    u = u.array()-max;
+	    u = u.array().exp();
+	    u /= u.sum();
  		u -= v;
 
 		return logits(z.moves_data(), h, z.size()); 
@@ -81,11 +76,23 @@ public:
 
 };
 
+class mae
+{
+
+public:
+
+	static float forward(float y_hat, float y)
+	{
+		return std::fabs(y_hat - y);
+	}
+};
+
 error loss::forward(const neural_output& y_hat, const neural_output& y)
 {
 	return  error(
 					mse::forward(y_hat.v, y.v)
-				,   0//cce::forward(y_hat.z, y.z)
+				,   mae::forward(y_hat.v, y.v)
+				,   cce::forward(y_hat.z, y.z)
 				,   y_hat.z == y.z ? 1 : 0
 			);
 }
@@ -94,6 +101,6 @@ neural_output loss::backward(const neural_output& y_hat, const neural_output& y)
 {
 	return  neural_output(
 					mse::backward(y_hat.v, y.v)
-				,   logits()//cce::backward(y_hat.z, y.z)
+				,   cce::backward(y_hat.z, y.z)
 			);
 }
