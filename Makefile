@@ -73,6 +73,8 @@ help:
 	@echo "-----------------------------------------------------------------------"
 
 build: bin/trainer bin/tester
+	@clear
+	@rm -rf result backup
 	@echo "Finished building training and test utilities!"
 
 rebuild:
