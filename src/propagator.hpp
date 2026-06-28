@@ -30,6 +30,7 @@ private:
 
 	size_t& rem_;
 	float& mse_sum_;
+	float& mae_sum_;
 	float& cce_sum_;
 	float& acc_sum_;
 	std::thread thread_;
@@ -55,6 +56,7 @@ public:
 			parameters& params
 		,   size_t& rem
 		,   float& mse_sum
+		,   float& mae_sum
 		,   float& cce_sum
 		,   float& acc_sum
 		,   std::mutex& mtx

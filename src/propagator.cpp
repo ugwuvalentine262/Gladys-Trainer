@@ -73,6 +73,7 @@ void propagator::iterator()
             std::lock_guard<std::mutex> lock(mtx_);
 
         	mse_sum_ += error.mse;
+        	mae_sum_ += error.mae;
 		    cce_sum_ += error.cce;
 		    acc_sum_ += error.accuracy;
 
@@ -94,6 +95,7 @@ propagator::propagator
 			parameters& params
 		,   size_t& rem
 		,   float& mse_sum
+		,   float& mae_sum
 		,   float& cce_sum
 		,   float& acc_sum
 		,   std::mutex& mtx
@@ -106,6 +108,7 @@ propagator::propagator
 		:   params_(params.data)
         ,   rem_(rem)
         ,   mse_sum_(mse_sum)
+        ,   mae_sum_(mae_sum)
         ,   cce_sum_(cce_sum)
         ,   acc_sum_(acc_sum)
 		,   thread_(&propagator::iterator, this)
