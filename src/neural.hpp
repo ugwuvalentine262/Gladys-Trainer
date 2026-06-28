@@ -22,6 +22,14 @@
     #error "Embedding dimension must be a multiple of 8"
 #endif
 
+#define WDL_INPUT_DIM (EMBEDDING_DIM*2)
+#define WDL_HIDDEN_DIM (EMBEDDING_DIM*2)
+#define WDL_OUTPUT_DIM 3
+#define POLICY_INPUT_DIM (EMBEDDING_DIM*3)
+#define POLICY_HIDDEN_DIM (EMBEDDING_DIM*2)
+#define PROMO_INPUT_DIM (EMBEDDING_DIM*3)
+#define PROMO_HIDDEN_DIM (EMBEDDING_DIM)
+#define PROMO_OUTPUT_DIM 4
 #define MATRIX_SIZE (EMBEDDING_DIM*EMBEDDING_DIM)
 #define LAYER_PARAM_SIZE (MATRIX_SIZE * 2 * EDGE_COUNT)
 #define WDL_OUTPUT_DIM 3
@@ -31,10 +39,9 @@
 #define LAYER3_PARAM_OFFSET (LAYER2_PARAM_OFFSET + LAYER_PARAM_SIZE)
 #define LAYER4_PARAM_OFFSET (LAYER3_PARAM_OFFSET + LAYER_PARAM_SIZE)
 #define WDL_PARAM_OFFSET (LAYER4_PARAM_OFFSET + LAYER_PARAM_SIZE)
-#define WDL_BIAS_OFFSET (WDL_PARAM_OFFSET + EMBEDDING_DIM * WDL_OUTPUT_DIM)
-#define POLICY_PARAM_OFFSET (WDL_BIAS_OFFSET + 3)
-#define PROMO_PARAM_OFFSET (POLICY_PARAM_OFFSET + (EMBEDDING_DIM * 3 * EMBEDDING_DIM) + 2 * EMBEDDING_DIM + 1)
-#define PARAM_COUNT (POLICY_PARAM_OFFSET) //(PROMO_PARAM_OFFSET + (EMBEDDING_DIM * 3 * (EMBEDDING_DIM / 2)) + (EMBEDDING_DIM / 2) + (EMBEDDING_DIM * 2) + 4)
+#define POLICY_PARAM_OFFSET (WDL_PARAM_OFFSET + (WDL_INPUT_DIM * WDL_HIDDEN_DIM) + (WDL_HIDDEN_DIM * WDL_OUTPUT_DIM) + WDL_OUTPUT_DIM + WDL_HIDDEN_DIM)
+#define PROMO_PARAM_OFFSET (POLICY_PARAM_OFFSET + (POLICY_INPUT_DIM * POLICY_HIDDEN_DIM) + (POLICY_HIDDEN_DIM) + 1 + POLICY_HIDDEN_DIM)
+#define PARAM_COUNT (PROMO_PARAM_OFFSET + (PROMO_INPUT_DIM * PROMO_HIDDEN_DIM) + (PROMO_HIDDEN_DIM * PROMO_OUTPUT_DIM) + PROMO_HIDDEN_DIM + PROMO_OUTPUT_DIM)
 #define ATTENTION_OFFSET (MATRIX_SIZE * EDGE_COUNT)
 
 using value=float;
@@ -60,6 +67,68 @@ public:
 
 };
 
+class mlp
+{
+    const float *W1_;
+    const float *b1_;
+    const float *W2_;
+    const float *b2_;
+
+    const size_t i_dim_;
+    const size_t h_dim_;
+    const size_t o_dim_;
+
+    float *x1, *x2;
+
+public:
+
+    void backward(const float dEdY[], float dEdX[], float grad[], float tmp[], size_t batch) const;
+    void forward(const float x[], float y[], size_t batch);
+
+    size_t param_count() const;
+
+    mlp(
+                const float params[]
+            ,   size_t i_dim
+            ,   size_t h_dim
+            ,   size_t o_dim
+            ,   float meta[]
+            ,   size_t max_batch
+        );
+};
+
+class value_head 
+{
+    mlp wdl_;
+
+    float y_wdl_[3];
+
+    nn_float_t meta_[WDL_INPUT_DIM+WDL_HIDDEN_DIM];
+
+public:
+
+    void backward(float dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const;
+    float forward(float Y[][EMBEDDING_DIM]);
+
+    value_head(const float params[]);
+};
+
+class policy_head
+{
+    mlp policy_, promotion_;
+
+    nn_float_t y_[128];
+    nn_float_t policy_meta_[POLICY_INPUT_DIM*128+POLICY_HIDDEN_DIM*128];
+    nn_float_t promo_meta_[PROMO_INPUT_DIM*22+PROMO_HIDDEN_DIM*22];
+
+public:
+
+    void backward(const descriptor& d, const logits& dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const;
+    logits forward(const descriptor& d, float X[][EMBEDDING_DIM]);
+
+    policy_head(const float params[]);
+};
+
 class forward_pass
 {
 	friend class backward_pass;
@@ -73,16 +142,13 @@ private:
     nn_msg_pass_t mp3_;
     nn_msg_pass_t mp4_;
 
-	const nn_float_t *wdl_;
-    const nn_float_t *wdl_b_;
-    const nn_float_t *policy_;
+    value_head value_;
+    policy_head policy_;
 
     alignas(16) nn_float_t X1[NODE_COUNT][EMBEDDING_DIM];
     alignas(16) nn_float_t X2[NODE_COUNT][EMBEDDING_DIM];
     alignas(16) nn_float_t X3[NODE_COUNT][EMBEDDING_DIM];
     alignas(16) nn_float_t X4[NODE_COUNT][EMBEDDING_DIM];
-    alignas(16) nn_float_t Xwdl[EMBEDDING_DIM];
-                nn_float_t y_wdl[3];
 
     const descriptor *d_;
 

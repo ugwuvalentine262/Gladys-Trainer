@@ -6,6 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
+#include <iostream>
 #include <Eigen/Dense>
 #include <string>
 
@@ -129,7 +130,7 @@ static void softmax_backprop(
     dxy.array() *= y_.array();
 }
 
-void softmax
+static void softmax
     (
             float          xy[]
         ,   unsigned const dim
@@ -152,11 +153,269 @@ static void accumulate
         ,   unsigned       count
     )
 {
-    Eigen::Map<Eigen::VectorXf> v(data, count);
+    Eigen::Map<      Eigen::VectorXf> v(data, count);
     Eigen::Map<const Eigen::VectorXf> h(delta, count);
 
     v += h;
 }
+
+void mlp::backward(const float dEdy[], float dEdx[], float grad[], float tmp[], size_t batch) const
+{
+    std::memset(grad, 0, sizeof(float)*param_count());
+
+    auto dEW1=grad;
+    auto dEb1=dEW1+i_dim_*h_dim_;
+    auto dEW2=dEb1+h_dim_;
+    auto dEb2=dEW2+h_dim_*o_dim_;
+
+    for (size_t i=0; i < batch; i++)
+    {
+        accumulate(dEb2, dEdy + i * o_dim_, o_dim_);
+    }
+
+    matmatT_mult(dEdy, x2, dEW2, o_dim_, h_dim_, batch);
+    matTmat_mult(W2_, dEdy, tmp, h_dim_, batch, o_dim_);
+
+    Eigen::Map<const Eigen::ArrayXf> v(x2, h_dim_*batch);
+    Eigen::Map<      Eigen::ArrayXf> delta(tmp, h_dim_*batch);
+
+    delta = (v > 0.0f).select(delta, 0.01f * delta);
+
+    for (size_t i=0; i < batch; i++)
+    {
+        accumulate(dEb1, tmp + i * h_dim_, h_dim_);
+    }
+
+    matmatT_mult(tmp, x1, dEW1, h_dim_, i_dim_, batch);
+    matTmat_mult(W1_, tmp, dEdx, i_dim_, batch, h_dim_);
+}
+
+void mlp::forward(const float x[], float y[], size_t batch)
+{
+    std::memcpy(x1, x, sizeof(float) * batch * i_dim_);
+    matmat_mult(W1_, x1, x2, batch, i_dim_, h_dim_);
+
+    for (size_t i=0; i < batch; i++) {
+        accumulate(x2 + i * h_dim_, b1_, h_dim_);
+    }
+
+    Eigen::Map<Eigen::ArrayXf> v(x2, h_dim_*batch);
+
+    v = (v > 0.0f).select(v, 0.01 * v);
+
+    matmat_mult(W2_, x2, y, batch, h_dim_, o_dim_);
+
+    for (size_t i=0; i < batch; i++) {
+        accumulate(y + i * o_dim_, b2_, o_dim_);
+    }
+}
+
+size_t mlp::param_count() const 
+{
+    return i_dim_*h_dim_+h_dim_*o_dim_+h_dim_+o_dim_;
+}
+
+mlp::mlp
+    (
+            const float params[]
+        ,   size_t i_dim
+        ,   size_t h_dim
+        ,   size_t o_dim
+        ,   float meta[]
+        ,   size_t max_batch
+    )
+    :   W1_(params)
+    ,   b1_(W1_+i_dim*h_dim)
+    ,   W2_(b1_+h_dim)
+    ,   b2_(W2_+h_dim*o_dim)
+    ,   i_dim_(i_dim)
+    ,   h_dim_(h_dim)
+    ,   o_dim_(o_dim)
+    ,   x1(meta)
+    ,   x2(meta+i_dim*max_batch)
+{}
+
+void value_head::backward(float dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const
+{
+    float dy[3] = {dEdy, 0, -dEdy};
+    float dx[2][EMBEDDING_DIM] = {};
+    float tmp[WDL_INPUT_DIM*WDL_HIDDEN_DIM];
+
+    auto dot = dy[0] * y_wdl_[0]
+            +  dy[2] * y_wdl_[2];
+
+    dy[0] = y_wdl_[0] * (dy[0] - dot);
+    dy[1] = y_wdl_[1] * (dy[1] - dot);
+    dy[2] = y_wdl_[2] * (dy[2] - dot);
+
+    wdl_.backward(dy, dx[0], grad, tmp, 1);
+
+    std::memcpy(dEdX[G1], dx[0], sizeof(float) * EMBEDDING_DIM);
+    std::memcpy(dEdX[G2], dx[1], sizeof(float) * EMBEDDING_DIM);
+}
+
+float value_head::forward(float X[][EMBEDDING_DIM])
+{
+    nn_float_t x[2][EMBEDDING_DIM];
+
+    auto& win=y_wdl_[0];
+    auto& draw=y_wdl_[1];
+    auto& loss=y_wdl_[2];
+
+    std::memcpy(x[0], X[G1], sizeof(float) * EMBEDDING_DIM);
+    std::memcpy(x[1], X[G2], sizeof(float) * EMBEDDING_DIM);
+
+    wdl_.forward(x[0], y_wdl_, 1);
+
+    auto max = std::max(win, std::max(draw, loss));
+
+    win = std::exp(win - max);
+    draw = std::exp(draw - max);
+    loss = std::exp(loss - max);
+
+    auto sum = win + draw + loss;
+
+    win /= sum;
+    draw /= sum;
+    loss /= sum;
+
+    return win - loss;
+}
+
+value_head::value_head(const float params[])
+    : wdl_(params, WDL_INPUT_DIM, WDL_HIDDEN_DIM, WDL_OUTPUT_DIM, meta_, 1)
+{}
+
+void policy_head::backward(const descriptor& d, const logits& dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const
+{
+    float dy[128];
+    float dyp[22*PROMO_OUTPUT_DIM];
+    float dEdx[128][POLICY_INPUT_DIM];
+    float dEdxp[22][PROMO_INPUT_DIM];
+    float tmp[POLICY_INPUT_DIM*128];
+
+    std::memcpy(dy, dEdy.vals_data(), sizeof(float) * d.mcount_);
+
+    softmax_backprop(dy, y_, d.mcount_);
+    int n=0;
+
+    for (int i=0; i < d.mcount_; i++)
+    {
+        auto promo = d.moves_[i].promo;
+
+        if (promo>0x1&&promo<0x6) {
+            dyp[n++]=dy[i];
+        }
+    }
+
+    if (n) {
+        promotion_.backward(dyp, dEdxp[0], grad + policy_.param_count(), tmp, n/4);
+    }
+    policy_.backward(dy, dEdx[0], grad, tmp, d.mcount_);
+
+    for (int i=0, k=0; i < d.mcount_; i++)
+    {
+        const auto& m = d.moves_[i];
+
+        if (m.promo>0x1&&m.promo<0x6)
+        {
+            auto dx1=dEdxp[k];
+            auto dx2=dx1+EMBEDDING_DIM;
+            auto dx3=dx2+EMBEDDING_DIM;
+
+            accumulate(dEdX[G3]    , dx1, EMBEDDING_DIM);
+            accumulate(dEdX[m.from], dx2, EMBEDDING_DIM);
+            accumulate(dEdX[m.to]  , dx3, EMBEDDING_DIM);
+
+            for (int j=0; j<4; j++)
+            {
+                auto dx1=dEdx[i+j];
+                auto dx2=dx1+EMBEDDING_DIM;
+                auto dx3=dx2+EMBEDDING_DIM;
+
+                accumulate(dEdX[G3]    , dx1, EMBEDDING_DIM);
+                accumulate(dEdX[m.from], dx2, EMBEDDING_DIM);
+                accumulate(dEdX[m.to]  , dx3, EMBEDDING_DIM);
+
+                (void)j;
+            }
+
+            i += 3, k++;
+        }
+        else {
+            auto dx1=dEdx[i];
+            auto dx2=dx1+EMBEDDING_DIM;
+            auto dx3=dx2+EMBEDDING_DIM;
+
+            accumulate(dEdX[G3]    , dx1, EMBEDDING_DIM);
+            accumulate(dEdX[m.from], dx2, EMBEDDING_DIM);
+            accumulate(dEdX[m.to]  , dx3, EMBEDDING_DIM);
+        }
+    }
+}
+
+logits policy_head::forward(const descriptor& d, float X[][EMBEDDING_DIM])
+{
+    float x[128][POLICY_INPUT_DIM]={};
+    float xp[22][PROMO_INPUT_DIM]={};
+    float yp[22][PROMO_OUTPUT_DIM]={};
+
+    int n=0;
+
+    struct { float *y, *yp; } pr[22][PROMO_OUTPUT_DIM];
+
+    for (int i=0; i < d.mcount_; i++)
+    {
+        const move& m = d.moves_[i];
+
+        if (m.promo>0x1&&m.promo<0x6)
+        {
+            for (int k=0; k < 4; k++)
+            {
+                auto x1=x[i+k];
+                auto x2=x1+EMBEDDING_DIM;
+                auto x3=x2+EMBEDDING_DIM;
+
+                std::memcpy(x1, X[G3], sizeof(float)*EMBEDDING_DIM);
+                std::memcpy(x2, X[m.from], sizeof(float)*EMBEDDING_DIM);
+                std::memcpy(x3, X[m.to], sizeof(float)*EMBEDDING_DIM);
+
+                pr[n][k].y=y_+i+k;
+                pr[n][k].yp=yp[n]+k;
+            }
+            std::memcpy(xp[n], x[i], sizeof(float)*POLICY_INPUT_DIM);
+            i+=3, n++;
+        }
+        else {
+            auto x1=x[i];
+            auto x2=x1+EMBEDDING_DIM;
+            auto x3=x2+EMBEDDING_DIM;
+
+            std::memcpy(x1, X[G3], sizeof(float)*EMBEDDING_DIM);
+            std::memcpy(x2, X[m.from], sizeof(float)*EMBEDDING_DIM);
+            std::memcpy(x3, X[m.to], sizeof(float)*EMBEDDING_DIM);
+        }
+    }
+
+    policy_.forward(x[0], y_, d.mcount_);
+
+    if (n!=0) {
+        promotion_.forward(xp[0], yp[0], n);
+
+        for (int i=0; i < n; i++)
+            for (int j=0; j < 4; j++)
+                *pr[i][j].y += *pr[i][j].yp;
+    }
+
+    softmax(y_, d.mcount_);
+
+    return logits(d.moves_, y_, d.mcount_);
+}
+
+policy_head::policy_head(const float params[])
+    : policy_(params, POLICY_INPUT_DIM, POLICY_HIDDEN_DIM, 1, policy_meta_, 128)
+    , promotion_(params + policy_.param_count(), PROMO_INPUT_DIM, PROMO_HIDDEN_DIM, PROMO_OUTPUT_DIM, promo_meta_, 22)
+{}
 
 neural_output::neural_output
     (
@@ -171,21 +430,9 @@ neural_output forward_pass::operator()(const descriptor& d)
 {
     d_=&d;
 
-    //auto moves=(const move*)d.moves_;
     logits p;
 
-    alignas(16) float Y[NODE_COUNT][EMBEDDING_DIM];
-
-    Eigen::Map<
-            const Eigen::Matrix<float, 3, EMBEDDING_DIM, Eigen::RowMajor>
-        > WDL(wdl_);
-
-    Eigen::Map<const Eigen::Matrix<float, EMBEDDING_DIM, 1>> x(Xwdl);
-    Eigen::Map<Eigen::Vector3f> y(y_wdl);
-
-    auto& win=y[0];
-    auto& draw=y[1];
-    auto& loss=y[2];
+    float Y[NODE_COUNT][EMBEDDING_DIM];
 
     nn_embedding(
             &emb_
@@ -201,27 +448,10 @@ neural_output forward_pass::operator()(const descriptor& d)
     MESSAGE_PASSING(3);
     MESSAGE_PASSING(4);
 
-    std::memcpy(Xwdl, Y[G1], sizeof(float) * EMBEDDING_DIM);
-
-    y.noalias() = WDL * x;
-
-    win += wdl_b_[0];
-    draw += wdl_b_[1];
-    loss += wdl_b_[2];
-
-    auto max = std::max(win, std::max(draw, loss));
-
-    win = std::exp(win - max);
-    draw = std::exp(draw - max);
-    loss = std::exp(loss - max);
-
-    auto sum = win + draw + loss;
-
-    win /= sum;
-    draw /= sum;
-    loss /= sum;
-
-    return neural_output(win - loss, p);
+    return neural_output( 
+                value_.forward(Y)
+              , policy_.forward(d, Y)
+           );
 }
 
 forward_pass::forward_pass(const float params[])
@@ -235,14 +465,12 @@ forward_pass::forward_pass(const float params[])
     ,   INIT_MESSAGE_PASSER(2)
     ,   INIT_MESSAGE_PASSER(3)
     ,   INIT_MESSAGE_PASSER(4)
-    ,   wdl_(params+WDL_PARAM_OFFSET)
-    ,   wdl_b_(params+WDL_BIAS_OFFSET)
+    ,   value_(params+WDL_PARAM_OFFSET)
     ,   policy_(params+POLICY_PARAM_OFFSET)
     ,   X1 {}
     ,   X2 {}
     ,   X3 {}
     ,   X4 {}
-    ,   Xwdl {}
     ,   d_(0)
     ,   mp1_temp_ {}
     ,   mp2_temp_ {}
@@ -252,45 +480,11 @@ forward_pass::forward_pass(const float params[])
 
 void backward_pass::operator()(const neural_output& dEdy, float grad[])
 {
-    alignas(16) float dY[NODE_COUNT][EMBEDDING_DIM]={};
-    alignas(16) float dX[NODE_COUNT][EMBEDDING_DIM]={};
-    alignas(16) float dy[3] = {dEdy.v, 0, -dEdy.v};
-    alignas(16) float dy_mp[EMBEDDING_DIM];
+    float dY[NODE_COUNT][EMBEDDING_DIM]={};
+    float dX[NODE_COUNT][EMBEDDING_DIM]={};
 
-    auto dot = dy[0] * fpass_.y_wdl[0]
-            +  dy[2] * fpass_.y_wdl[2];
-
-    dy[0] = fpass_.y_wdl[0] * (dy[0] - dot);
-    dy[1] = fpass_.y_wdl[1] * (dy[1] - dot);
-    dy[2] = fpass_.y_wdl[2] * (dy[2] - dot);
-
-    grad[WDL_BIAS_OFFSET+0] = dy[0];
-    grad[WDL_BIAS_OFFSET+1] = dy[1];
-    grad[WDL_BIAS_OFFSET+2] = dy[2];
-
-    Eigen::Map<const Eigen::Vector3f> dy_(dy);
-
-    Eigen::Map<
-            const Eigen::Matrix<float, 1, EMBEDDING_DIM>
-        > x(fpass_.Xwdl);
-
-    Eigen::Map<
-            Eigen::Matrix<float, 3, EMBEDDING_DIM, Eigen::RowMajor>
-        > dWDL(grad + WDL_PARAM_OFFSET);
-
-    dWDL.noalias() = dy_ * x;
-
-    matmat_mult
-    (
-            fpass_.wdl_
-        ,   dy
-        ,   dy_mp
-        ,   1
-        ,   WDL_OUTPUT_DIM
-        ,   EMBEDDING_DIM
-    );
-
-    std::memcpy(dY[G1], dy_mp, sizeof(float) * EMBEDDING_DIM);
+    fpass_.policy_.backward(*fpass_.d_, dEdy.z, dY, grad + POLICY_PARAM_OFFSET);
+    fpass_.value_.backward(dEdy.v, dY, grad + WDL_PARAM_OFFSET);
 
     temp_.resize(fpass_.mp1_temp_.size());
 
