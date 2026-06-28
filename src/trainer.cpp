@@ -29,7 +29,7 @@ void trainer::train()
 
     dataset_.shuffle();
 
-	mse_sum_=cce_sum_=acc_sum_=0;
+	mse_sum_=mae_sum_=cce_sum_=acc_sum_=0;
 
 	for (const auto& sample : dataset_)
 	{    
@@ -75,6 +75,7 @@ void trainer::train()
 
 	auto end = clock::now();
 
+	auto mae_error = mae_sum_ / dataset_.size();
 	auto mse_error = mse_sum_ / dataset_.size();
 	auto cce_error = cce_sum_ / dataset_.size();
 	auto accuracy = acc_sum_ / dataset_.size();
@@ -93,6 +94,9 @@ void trainer::train()
 		<< "mse: " 
 		<< std::setw(8)
 		<< mse_error
+		<< " | mae: " 
+		<< std::setw(8)
+		<< mae_error
 		<< " | cce: "
 		<< std::setw(8)
 		<< cce_error
@@ -140,6 +144,7 @@ trainer::trainer(
 			size_t workers
 		,   size_t batch_size
 		,   float alpha
+		,   float lambda
 		,   std::ofstream& log
 	)
 		:   log_(log)
@@ -148,10 +153,11 @@ trainer::trainer(
 		,   xgrad_(batch_size)
 		,   props_ {}
 		,   dataset_(log)
-		,   adam_(params_.data, grad_.data, alpha)
+		,   adam_(params_.data, grad_.data, alpha, lambda)
 		,   batch_size_(batch_size)
 		,   rem_(0)
 		,   mse_sum_(0)
+		,   mae_sum_(0)
 		,   cce_sum_(0)
 		,   acc_sum_(0)
 		,   batch_ {}
@@ -169,6 +175,7 @@ trainer::trainer(
 				params_
 			,   rem_
 			,   mse_sum_
+			,   mae_sum_
 			,   cce_sum_
 			,   acc_sum_
 			,   mtx_
@@ -194,13 +201,10 @@ trainer::trainer(
 	{
         std::ofstream ofile(NNFILE, std::ios::binary);
 
-		auto bias=params_.data+WDL_BIAS_OFFSET;
-
 		for (int i=0; i < PARAM_COUNT; i++)
 		{
 		    params_.data[i] = dist(gen);
 		}
-		bias[0]=bias[1]=bias[2]=0;
 
         log.close();
         log.open(LOGFILE);
@@ -228,6 +232,7 @@ int main(int argc, char *argv[])
 	auto epochs=10;
 	auto batch=50;
 	auto alpha=0.001f;
+    auto lambda=0.0001f;
 	auto workers=4u;
     auto break_duration=0;
 
@@ -274,6 +279,9 @@ int main(int argc, char *argv[])
 		else if (arg=="alpha") {
 			alpha= static_cast<float>(x);
 		}
+		else if (arg=="lambda") {
+			lambda= static_cast<float>(x);
+		}
 		else if (arg=="workers") {
 			workers= static_cast<unsigned>(x);
 		}
@@ -285,7 +293,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	trainer trainer(workers, batch, alpha, log);
+	trainer trainer(workers, batch, alpha, lambda, log);
 
 	for (auto i=0; i< epochs; i++) 
 	{

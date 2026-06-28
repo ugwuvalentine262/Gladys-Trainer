@@ -37,6 +37,7 @@ private:
 
 	size_t rem_;
 	float mse_sum_;
+	float mae_sum_;
 	float cce_sum_;
 	float acc_sum_;
 	std::mutex mtx_;
@@ -56,6 +57,7 @@ public:
             size_t workers
         ,   size_t batch_size
         ,   float alpha
+        ,   float lambda
         ,   std::ofstream& file
     );
 
