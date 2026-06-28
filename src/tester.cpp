@@ -45,6 +45,7 @@ void tester::iterator()
             std::lock_guard<std::mutex> lock(mtx_);
 
         	mse_sum_ += error.mse;
+        	mae_sum_ += error.mae;
 		    cce_sum_ += error.cce;
 		    acc_sum_ += error.accuracy;
 
@@ -73,6 +74,7 @@ tester::tester(
 		,   threads_{}
 		,   rem_(dataset_.size())
 		,   mse_sum_(0)
+		,   mae_sum_(0)
 		,   cce_sum_(0)
 		,   acc_sum_(0)
 {
@@ -118,6 +120,7 @@ tester::tester(
 	auto end = clock::now();
 
 	auto mse_error = mse_sum_ / dataset_.size();
+	auto mae_error = mae_sum_ / dataset_.size();
 	auto cce_error = cce_sum_ / dataset_.size();
 	auto accuracy = acc_sum_ / dataset_.size();
 
@@ -135,6 +138,9 @@ tester::tester(
 		<< "mse: " 
 		<< std::setw(8)
 		<< mse_error
+		<< " | mae: " 
+		<< std::setw(8)
+		<< mae_error
 		<< " | cce: "
 		<< std::setw(8)
 		<< cce_error

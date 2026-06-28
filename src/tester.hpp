@@ -34,6 +34,7 @@ private:
 	std::mutex mtx_;
 	size_t rem_;
 	float mse_sum_;
+	float mae_sum_;
 	float cce_sum_;
 	float acc_sum_;
 
