@@ -166,7 +166,7 @@ trainer::trainer(
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> dist(-0.5, 0.5);
+	std::uniform_real_distribution<float> dist(-RANGE/2.0F, RANGE/2.0F);
 
 	for (size_t i=0; i < workers; i++)
 	{
