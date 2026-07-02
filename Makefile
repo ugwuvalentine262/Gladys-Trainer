@@ -4,11 +4,13 @@ EPOCHS ?= 1
 SESSIONS ?= 1
 WORKERS ?= 4
 ALPHA ?= 0.001
-LAMBDA ?= 0.0001
+LAMBDA ?= 0.01
 BATCH ?= 50
 BREAK ?= 0
 LOG ?= TRUE
-EMBEDDING ?= 8 # specified at compile-time
+EMBEDDING ?= 16 # specified at compile-time
+RANGE ?= 0.4    # range of values used for initializing weights
+SCALE ?= 400.0  # a constant for scaling centi-pawn values
 
 override CXX := g++
 override BACKUP_DIR := $(CURDIR)/backup
@@ -16,9 +18,9 @@ override RESULT_DIR := $(CURDIR)/result
 override DATASET_DIR := $(CURDIR)/dataset
 override ADAMFILE := adam
 override NNFILE := nn
-override LOGFILE := sessions.txt
-override TRAINLOG := trainlog.txt
-override TESTLOG := testlog.txt
+override LOGFILE := sessions.log
+override TRAINLOG := train.log
+override TESTLOG := test.log
 override TRAINSET_DIR := $(DATASET_DIR)/trainset
 override TESTSET_DIR := $(DATASET_DIR)/testset
 override LOGICNN_PROJECT_ROOT := $(CURDIR)/external/LogicNN
@@ -153,11 +155,11 @@ bin/tester: _lib $(TESTER_OBJ) $(TESTER_HDR)
 
 build/trainer/%.o: src/%.cpp $(TRAINER_HDR)
 	@mkdir -p build/trainer
-	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DLOGFILE=\"$(RESULT_DIR)/$(TRAINLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DADAMFILE=\"$(RESULT_DIR)/$(ADAMFILE)\" -DDATASET_DIR=\"$(TRAINSET_DIR)\" -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DSCALE=$(SCALE) -DRANGE=$(RANGE) -DLOGFILE=\"$(RESULT_DIR)/$(TRAINLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DADAMFILE=\"$(RESULT_DIR)/$(ADAMFILE)\" -DDATASET_DIR=\"$(TRAINSET_DIR)\" -c $< -o $@
 
 build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@mkdir -p build/tester
-	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DSCALE=$(SCALE) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
 .PHONY: help build rebuild init run epoch eval backup restore refresh reset clean
