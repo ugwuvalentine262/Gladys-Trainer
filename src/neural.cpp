@@ -446,7 +446,6 @@ neural_output forward_pass::operator()(const descriptor& d)
     MESSAGE_PASSING(1);
     MESSAGE_PASSING(2);
     MESSAGE_PASSING(3);
-    MESSAGE_PASSING(4);
 
     return neural_output( 
                 value_.forward(Y)
@@ -464,18 +463,15 @@ forward_pass::forward_pass(const float params[])
     ,   INIT_MESSAGE_PASSER(1)
     ,   INIT_MESSAGE_PASSER(2)
     ,   INIT_MESSAGE_PASSER(3)
-    ,   INIT_MESSAGE_PASSER(4)
     ,   value_(params+WDL_PARAM_OFFSET)
     ,   policy_(params+POLICY_PARAM_OFFSET)
     ,   X1 {}
     ,   X2 {}
     ,   X3 {}
-    ,   X4 {}
     ,   d_(0)
     ,   mp1_temp_ {}
     ,   mp2_temp_ {}
     ,   mp3_temp_ {}
-    ,   mp4_temp_ {}
 {}
 
 void backward_pass::operator()(const neural_output& dEdy, float grad[])
@@ -488,7 +484,6 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
 
     temp_.resize(fpass_.mp1_temp_.size());
 
-    MESSAGE_BACKWARD(4);
     MESSAGE_BACKWARD(3);
     MESSAGE_BACKWARD(2);
     MESSAGE_BACKWARD(1);

@@ -37,8 +37,7 @@
 #define LAYER1_PARAM_OFFSET (EMBEDDING_DIM*ATTRIBUTE_COUNT)
 #define LAYER2_PARAM_OFFSET (LAYER1_PARAM_OFFSET + LAYER_PARAM_SIZE)
 #define LAYER3_PARAM_OFFSET (LAYER2_PARAM_OFFSET + LAYER_PARAM_SIZE)
-#define LAYER4_PARAM_OFFSET (LAYER3_PARAM_OFFSET + LAYER_PARAM_SIZE)
-#define WDL_PARAM_OFFSET (LAYER4_PARAM_OFFSET + LAYER_PARAM_SIZE)
+#define WDL_PARAM_OFFSET (LAYER3_PARAM_OFFSET + LAYER_PARAM_SIZE)
 #define POLICY_PARAM_OFFSET (WDL_PARAM_OFFSET + (WDL_INPUT_DIM * WDL_HIDDEN_DIM) + (WDL_HIDDEN_DIM * WDL_OUTPUT_DIM) + WDL_OUTPUT_DIM + WDL_HIDDEN_DIM)
 #define PROMO_PARAM_OFFSET (POLICY_PARAM_OFFSET + (POLICY_INPUT_DIM * POLICY_HIDDEN_DIM) + (POLICY_HIDDEN_DIM) + 1 + POLICY_HIDDEN_DIM)
 #define PARAM_COUNT (PROMO_PARAM_OFFSET + (PROMO_INPUT_DIM * PROMO_HIDDEN_DIM) + (PROMO_HIDDEN_DIM * PROMO_OUTPUT_DIM) + PROMO_HIDDEN_DIM + PROMO_OUTPUT_DIM)
@@ -140,22 +139,19 @@ private:
 	nn_msg_pass_t mp1_;
     nn_msg_pass_t mp2_;
     nn_msg_pass_t mp3_;
-    nn_msg_pass_t mp4_;
 
     value_head value_;
     policy_head policy_;
 
-    alignas(16) nn_float_t X1[NODE_COUNT][EMBEDDING_DIM];
-    alignas(16) nn_float_t X2[NODE_COUNT][EMBEDDING_DIM];
-    alignas(16) nn_float_t X3[NODE_COUNT][EMBEDDING_DIM];
-    alignas(16) nn_float_t X4[NODE_COUNT][EMBEDDING_DIM];
+    nn_float_t X1[NODE_COUNT][EMBEDDING_DIM];
+    nn_float_t X2[NODE_COUNT][EMBEDDING_DIM];
+    nn_float_t X3[NODE_COUNT][EMBEDDING_DIM];
 
     const descriptor *d_;
 
 	std::vector<nn_byte_t> mp1_temp_;
 	std::vector<nn_byte_t> mp2_temp_;
 	std::vector<nn_byte_t> mp3_temp_;
-	std::vector<nn_byte_t> mp4_temp_;
 
 public:
 
