@@ -93,7 +93,8 @@ error loss::forward(const neural_output& y_hat, const neural_output& y)
 					mse::forward(y_hat.v, y.v)
 				,   mae::forward(y_hat.v, y.v)
 				,   cce::forward(y_hat.z, y.z)
-				,   y_hat.z == y.z ? 1 : 0
+				,   y_hat.z.accuracy(y.z, 1)
+				,   y_hat.z.accuracy(y.z, 3)
 			);
 }
 

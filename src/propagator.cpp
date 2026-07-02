@@ -52,7 +52,8 @@ void propagator::iterator()
         	mse_sum_ += error.mse;
         	mae_sum_ += error.mae;
 		    cce_sum_ += error.cce;
-		    acc_sum_ += error.accuracy;
+		    acc1_sum_ += error.top_1_accuracy;
+		    acc3_sum_ += error.top_3_accuracy;
 
             if (!--rem_) {
                 batch_ready_=false;
@@ -74,7 +75,8 @@ propagator::propagator
 		,   float& mse_sum
 		,   float& mae_sum
 		,   float& cce_sum
-		,   float& acc_sum
+		,   float& acc1_sum
+		,   float& acc3_sum
 		,   std::mutex& mtx
 		,   std::condition_variable& work_cv
 		,   std::condition_variable& done_cv
@@ -87,7 +89,8 @@ propagator::propagator
         ,   mse_sum_(mse_sum)
         ,   mae_sum_(mae_sum)
         ,   cce_sum_(cce_sum)
-        ,   acc_sum_(acc_sum)
+        ,   acc1_sum_(acc1_sum)
+        ,   acc3_sum_(acc3_sum)
 		,   thread_(&propagator::iterator, this)
 		,   mtx_(mtx)
 		,   work_cv_(work_cv)

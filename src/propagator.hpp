@@ -32,7 +32,8 @@ private:
 	float& mse_sum_;
 	float& mae_sum_;
 	float& cce_sum_;
-	float& acc_sum_;
+	float& acc1_sum_;
+	float& acc3_sum_;
 	std::thread thread_;
 	std::mutex& mtx_;
 	std::condition_variable& work_cv_;
@@ -58,7 +59,8 @@ public:
 		,   float& mse_sum
 		,   float& mae_sum
 		,   float& cce_sum
-		,   float& acc_sum
+		,   float& acc1_sum
+		,   float& acc3_sum
 		,   std::mutex& mtx
 		,   std::condition_variable& work_cv
 		,   std::condition_variable& done_cv

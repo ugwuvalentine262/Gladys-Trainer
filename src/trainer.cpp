@@ -29,7 +29,7 @@ void trainer::train()
 
     dataset_.shuffle();
 
-	mse_sum_=mae_sum_=cce_sum_=acc_sum_=0;
+	mse_sum_=mae_sum_=cce_sum_=acc1_sum_=acc3_sum_=0;
 
 	for (const auto& sample : dataset_)
 	{    
@@ -78,7 +78,8 @@ void trainer::train()
 	auto mae_error = mae_sum_ / dataset_.size();
 	auto mse_error = mse_sum_ / dataset_.size();
 	auto cce_error = cce_sum_ / dataset_.size();
-	auto accuracy = acc_sum_ / dataset_.size();
+	auto top_1_accuracy = acc1_sum_ / dataset_.size();
+	auto top_3_accuracy = acc3_sum_ / dataset_.size();
 
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
@@ -100,9 +101,12 @@ void trainer::train()
 		<< " | cce: "
 		<< std::setw(8)
 		<< cce_error
-		<< " | accuracy: "
+		<< " | top-1-accuracy: "
 		<< std::setw(8) 
-		<< accuracy
+		<< top_1_accuracy
+		<< " | top-3-accuracy: "
+		<< std::setw(8) 
+		<< top_3_accuracy
 		<< " | elapsed: "
 		<< std::setfill('0')
 		<< std::setw(2)
@@ -159,7 +163,8 @@ trainer::trainer(
 		,   mse_sum_(0)
 		,   mae_sum_(0)
 		,   cce_sum_(0)
-		,   acc_sum_(0)
+		,   acc1_sum_(0)
+		,   acc3_sum_(0)
 		,   batch_ {}
         ,   batch_ready_(false)
 		,   stop_(false)
@@ -177,7 +182,8 @@ trainer::trainer(
 			,   mse_sum_
 			,   mae_sum_
 			,   cce_sum_
-			,   acc_sum_
+			,   acc1_sum_
+			,   acc3_sum_
 			,   mtx_
 			,   work_cv_
             ,   done_cv_

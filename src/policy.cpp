@@ -97,13 +97,16 @@ const float *logits::vals_data() const
     return vals_;
 }
 
-bool logits::operator==(const logits& logits) const
+float logits::accuracy(const logits& logits, size_t K) const
 {
-    return count_ 
-        ? 
-            logits.count_==count_
-        &&  logits.pairs_[0]==pairs_[0]
-        :   0;    
+    if (this->size()!=logits.size()) return 0.0f;
+    if (this->size()<=K) return 1.0f;
+
+    for (size_t i=0; i<K; i++)
+    {
+        if (pairs_[i]==logits.pairs_[i]) return 1.0f;
+    }
+    return 0.0f;
 }
 
 const move_t *logits::begin() const

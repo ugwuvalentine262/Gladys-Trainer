@@ -65,7 +65,7 @@ public:
     const move *moves_data() const;
     const float *vals_data() const;
 
-    bool operator==(const logits& logits) const;
+    float accuracy(const logits& logits, size_t K) const;
 
     const move_t *begin() const;
     const move_t *end() const;

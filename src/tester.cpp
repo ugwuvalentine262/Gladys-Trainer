@@ -47,7 +47,8 @@ void tester::iterator()
         	mse_sum_ += error.mse;
         	mae_sum_ += error.mae;
 		    cce_sum_ += error.cce;
-		    acc_sum_ += error.accuracy;
+		    acc1_sum_ += error.top_1_accuracy;
+		    acc3_sum_ += error.top_3_accuracy;
 
             if (--rem_==0) {
                 cv_.notify_one();
@@ -76,7 +77,8 @@ tester::tester(
 		,   mse_sum_(0)
 		,   mae_sum_(0)
 		,   cce_sum_(0)
-		,   acc_sum_(0)
+		,   acc1_sum_(0)
+		,   acc3_sum_(0)
 {
 	std::ifstream file(NNFILE, std::ios::binary);
 
@@ -122,7 +124,8 @@ tester::tester(
 	auto mse_error = mse_sum_ / dataset_.size();
 	auto mae_error = mae_sum_ / dataset_.size();
 	auto cce_error = cce_sum_ / dataset_.size();
-	auto accuracy = acc_sum_ / dataset_.size();
+	auto top_1_accuracy = acc1_sum_ / dataset_.size();
+	auto top_3_accuracy = acc3_sum_ / dataset_.size();
 
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
@@ -144,9 +147,12 @@ tester::tester(
 		<< " | cce: "
 		<< std::setw(8)
 		<< cce_error
-		<< " | accuracy: "
+		<< " | top-1-accuracy: "
 		<< std::setw(8) 
-		<< accuracy
+		<< top_1_accuracy
+		<< " | top-3-accuracy: "
+		<< std::setw(8) 
+		<< top_3_accuracy
 		<< " | elapsed: "
 		<< std::setfill('0')
 		<< std::setw(2)

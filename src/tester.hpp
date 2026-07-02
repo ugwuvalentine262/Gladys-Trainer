@@ -36,7 +36,8 @@ private:
 	float mse_sum_;
 	float mae_sum_;
 	float cce_sum_;
-	float acc_sum_;
+	float acc1_sum_;
+	float acc3_sum_;
 
 private:
 
