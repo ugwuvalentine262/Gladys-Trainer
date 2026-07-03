@@ -12,7 +12,7 @@
 
 #include "policy.hpp"
 
-move::move(const std::string& algebra)
+move::move(const std::string& algebra, bool white)
 {
     auto square = [](char file, char rank)
         {
@@ -47,6 +47,12 @@ move::move(const std::string& algebra)
         case 'Q': promo=0x5; break;
         default: throw move::bad();
         }
+    }
+
+    if (!white)
+    {
+        from^=56;
+        to^=56;  
     }
 }
 
@@ -156,7 +162,7 @@ logits::logits(
     std::sort(pairs_, pairs_+count_);
 }
 
-policy::policy(const std::string& pi)
+policy::policy(const std::string& pi, bool white)
     :   logits()
 {
     std::string token;
@@ -166,7 +172,7 @@ policy::policy(const std::string& pi)
 
     while ((iss >> token))
     {
-        moves_[count_]=move(token);
+        moves_[count_]=move(token, white);
 
         if ((iss >> vals_[count_]))
         {

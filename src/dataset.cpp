@@ -15,13 +15,13 @@
 
 descriptor sample::input() const
 {
-    policy pi(policy_);
+    policy pi(policy_, brd_.white);
     return descriptor(brd_, pi.moves_data(), pi.size());
 }
 
 neural_output sample::output() const
 {
-    policy pi(policy_);
+    policy pi(policy_, brd_.white);
     return neural_output(eval_, pi);
 }
 

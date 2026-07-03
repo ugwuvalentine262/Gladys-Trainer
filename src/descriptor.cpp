@@ -71,12 +71,12 @@ inline T yield(std::stringstream& ss)
 board::board(const std::string& fen)
     :   mailbox {}
     ,   ep_file(-1)
+    ,   white(1)
     ,   friend_has_oo(0)
     ,   friend_has_ooo(0)
     ,   enemy_has_oo(0)
     ,   enemy_has_ooo(0)
 {
-    bool iw;
     char ch;
     std::stringstream ss(fen);
 
@@ -112,7 +112,7 @@ board::board(const std::string& fen)
         }
     }
 
-    iw=yield<char>(ss)=='b'?false:true;
+    white=yield<char>(ss)=='b'?false:true;
 
     yield<char>(ss);
 
@@ -129,7 +129,7 @@ board::board(const std::string& fen)
         ep_file=(int)(ch-'a'), yield<char>(ss);
     }
 
-    if (!iw) {
+    if (!white) {
         std::swap(friend_has_ooo, enemy_has_ooo);
         std::swap(friend_has_oo, enemy_has_oo);
 

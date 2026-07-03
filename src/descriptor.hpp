@@ -43,6 +43,7 @@ struct board
 {
 	char mailbox[64];
 	int ep_file=0;
+    bool white=1;
 	bool friend_has_oo;
 	bool friend_has_ooo;
 	bool enemy_has_oo;

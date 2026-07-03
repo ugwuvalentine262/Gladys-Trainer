@@ -22,7 +22,7 @@ struct move
 public:
 
     move()=default;
-    move(const std::string& algebra);
+    move(const std::string& algebra, bool white);
     move(
             int _from
         ,   int _to
@@ -84,7 +84,7 @@ struct policy : public logits
     struct bad {};
 
     policy()=default;
-    policy(const std::string& pi);
+    policy(const std::string& pi, bool white);
     policy(const policy& pi);
 
 };
