@@ -23,12 +23,12 @@
                 case 0x4: INSERT_ATTRIBUTE(FRIEND_ROOK, Sq); break; \
                 case 0x5: INSERT_ATTRIBUTE(FRIEND_QUEEN, Sq); break; \
                 case 0x6: INSERT_ATTRIBUTE(FRIEND_KING, Sq); break; \
-                case 0x8: INSERT_ATTRIBUTE(ENEMY_PAWN, Sq); break; \
-                case 0x9: INSERT_ATTRIBUTE(ENEMY_KNIGHT, Sq); break; \
-                case 0xa: INSERT_ATTRIBUTE(ENEMY_BISHOP, Sq); break; \
-                case 0xb: INSERT_ATTRIBUTE(ENEMY_ROOK, Sq); break; \
-                case 0xc: INSERT_ATTRIBUTE(ENEMY_QUEEN, Sq); break; \
-                case 0xd: INSERT_ATTRIBUTE(ENEMY_KING, Sq); break; \
+                case 0x9: INSERT_ATTRIBUTE(ENEMY_PAWN, Sq); break; \
+                case 0xa: INSERT_ATTRIBUTE(ENEMY_KNIGHT, Sq); break; \
+                case 0xb: INSERT_ATTRIBUTE(ENEMY_BISHOP, Sq); break; \
+                case 0xc: INSERT_ATTRIBUTE(ENEMY_ROOK, Sq); break; \
+                case 0xd: INSERT_ATTRIBUTE(ENEMY_QUEEN, Sq); break; \
+                case 0xe: INSERT_ATTRIBUTE(ENEMY_KING, Sq); break; \
                 default: INSERT_ATTRIBUTE(EMPTY, Sq); \
                 }
 
@@ -101,12 +101,12 @@ board::board(const std::string& fen)
             if (ch=='R') mailbox[sq]=0x4;
             if (ch=='Q') mailbox[sq]=0x5;
             if (ch=='K') mailbox[sq]=0x6;
-            if (ch=='p') mailbox[sq]=0x8;
-            if (ch=='n') mailbox[sq]=0x9;
-            if (ch=='b') mailbox[sq]=0xa;
-            if (ch=='r') mailbox[sq]=0xb;
-            if (ch=='q') mailbox[sq]=0xc;
-            if (ch=='k') mailbox[sq]=0xd;
+            if (ch=='p') mailbox[sq]=0x9;
+            if (ch=='n') mailbox[sq]=0xa;
+            if (ch=='b') mailbox[sq]=0xb;
+            if (ch=='r') mailbox[sq]=0xc;
+            if (ch=='q') mailbox[sq]=0xd;
+            if (ch=='k') mailbox[sq]=0xe;
 
             sq++;
         }
@@ -135,6 +135,9 @@ board::board(const std::string& fen)
 
         for (int i=0; i < 32; i++) {
             std::swap(mailbox[i], mailbox[i^56]);
+            
+            if (mailbox[i]) mailbox[i] ^= 0x8;
+            if (mailbox[i^56]) mailbox[i^56] ^= 0x8;
         }
     }
 }
