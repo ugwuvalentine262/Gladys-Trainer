@@ -6,7 +6,6 @@
  * modification, or distribution is not permitted.
  */
 
-#include <iostream>
 #include <Eigen/Dense>
 #include <string>
 
