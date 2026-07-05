@@ -16,7 +16,7 @@
 #include "policy.hpp"
 
 #define EDGE_COUNT 15
-#define ATTRIBUTE_COUNT 22
+#define ATTRIBUTE_COUNT 23
 #define NODE_COUNT 113
 
 enum node_type : nn_uint_t 
@@ -42,8 +42,9 @@ enum node_type : nn_uint_t
 struct board
 {
 	char mailbox[64];
-	int ep_file=0;
-    bool white=1;
+	int8_t ep_square;
+    int8_t repeated;
+    bool white;
 	bool friend_has_oo;
 	bool friend_has_ooo;
 	bool enemy_has_oo;
@@ -51,6 +52,7 @@ struct board
 
 public:
 
+    board()=delete;
 	board(const std::string& fen);
 
 };

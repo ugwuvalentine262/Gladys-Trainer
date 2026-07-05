@@ -58,7 +58,7 @@ enum attribute_type : nn_uint_t
     ,   FRIEND_OO, FRIEND_OOO
     ,   ENEMY_PAWN, ENEMY_KNIGHT, ENEMY_BISHOP, ENEMY_ROOK, ENEMY_QUEEN, ENEMY_KING
     ,   ENEMY_OO, ENEMY_OOO
-    ,   ROW, COLUMN, DIAGONAL, ANTI_DIAGONAL, ENPASSANT, EMPTY, GLOBAL
+    ,   ROW, COLUMN, DIAGONAL, ANTI_DIAGONAL, ENPASSANT, EMPTY, GLOBAL, REPETITION
 };
 
 template<class T>
@@ -70,7 +70,8 @@ inline T yield(std::stringstream& ss)
 
 board::board(const std::string& fen)
     :   mailbox {}
-    ,   ep_file(-1)
+    ,   ep_square(-1)
+    ,   repeated(0)
     ,   white(1)
     ,   friend_has_oo(0)
     ,   friend_has_ooo(0)
@@ -126,7 +127,13 @@ board::board(const std::string& fen)
 
     if ((ss >> ch) && isalpha(ch))
     {
-        ep_file=(int)(ch-'a'), yield<char>(ss);
+        auto file=ch;
+        auto rank=yield<char>(ss);
+
+        if (!white) {
+            rank = "87654321"[rank-'1'];
+        }
+        ep_square=(int8_t)(rank-'1') * 8 + (int8_t)(file-'a');
     }
 
     if (!white) {
@@ -140,6 +147,9 @@ board::board(const std::string& fen)
             if (mailbox[i^56]) mailbox[i^56] ^= 0x8;
         }
     }
+
+    yield<char>(ss);
+    ss >> repeated;
 }
 
 descriptor::descriptor
@@ -185,9 +195,16 @@ descriptor::descriptor
 
     std::memcpy(moves_, moves, sizeof(move) * mcount);
 
-    INSERT_ATTRIBUTE(GLOBAL, G1);
-    INSERT_ATTRIBUTE(GLOBAL, G2);
-    INSERT_ATTRIBUTE(GLOBAL, G3);
+    if (b.repeated) {
+        INSERT_ATTRIBUTE(REPETITION, G1);
+        INSERT_ATTRIBUTE(REPETITION, G2);
+        INSERT_ATTRIBUTE(REPETITION, G3);
+    }
+    else {
+        INSERT_ATTRIBUTE(GLOBAL, G1);
+        INSERT_ATTRIBUTE(GLOBAL, G2);
+        INSERT_ATTRIBUTE(GLOBAL, G3);
+    }
 
     INSERT_ATTRIBUTE(DIAGONAL, D01),  INSERT_ATTRIBUTE(ANTI_DIAGONAL, D16);
     INSERT_ATTRIBUTE(DIAGONAL, D02),  INSERT_ATTRIBUTE(ANTI_DIAGONAL, D17);
@@ -219,17 +236,9 @@ descriptor::descriptor
     if (brd. enemy_has_oo ) INSERT_ATTRIBUTE( ENEMY_OO , S61);
     if (brd. enemy_has_ooo) INSERT_ATTRIBUTE( ENEMY_OOO, S61);
 
-    switch (brd.ep_file)
+    if (b.ep_square!=-1)
     {
-    case 0: INSERT_ATTRIBUTE(ENPASSANT, FA); break;
-    case 1: INSERT_ATTRIBUTE(ENPASSANT, FB); break;
-    case 2: INSERT_ATTRIBUTE(ENPASSANT, FC); break;
-    case 3: INSERT_ATTRIBUTE(ENPASSANT, FD); break;
-    case 4: INSERT_ATTRIBUTE(ENPASSANT, FE); break;
-    case 5: INSERT_ATTRIBUTE(ENPASSANT, FF); break;
-    case 6: INSERT_ATTRIBUTE(ENPASSANT, FG); break;
-    case 7: INSERT_ATTRIBUTE(ENPASSANT, FH); break;
-    default:;
+        INSERT_ATTRIBUTE(ENPASSANT, (nn_uint16_t)b.ep_square);
     }
 
     QUALIFY_SQUARE(S01);  QUALIFY_SQUARE(S33); 
