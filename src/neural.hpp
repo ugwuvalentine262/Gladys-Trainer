@@ -15,6 +15,7 @@
 #include <logicnn.h>
 #include <logicnn_backprop.h>
 
+#include "WDL.hpp"
 #include "descriptor.hpp"
 #include "policy.hpp"
 
@@ -54,13 +55,13 @@ using parameters=my_array;
 
 struct neural_output
 {
-	const value v;
+	const WDL wdl;
 	const logits z;
 
 public:
 
 	neural_output(
-            const value& _v
+            const WDL& _wdl
         ,   const logits& _z
     );
 
@@ -96,20 +97,18 @@ public:
         );
 };
 
-class value_head 
+class wdl_head 
 {
     mlp wdl_;
-
-    float y_wdl_[3];
 
     nn_float_t meta_[WDL_INPUT_DIM+WDL_HIDDEN_DIM];
 
 public:
 
-    void backward(float dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const;
-    float forward(float Y[][EMBEDDING_DIM]);
+    void backward(WDL dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const;
+    WDL forward(float Y[][EMBEDDING_DIM]);
 
-    value_head(const float params[]);
+    wdl_head(const float params[]);
 };
 
 class policy_head
@@ -140,7 +139,7 @@ private:
     nn_msg_pass_t mp2_;
     nn_msg_pass_t mp3_;
 
-    value_head value_;
+    wdl_head wdl_;
     policy_head policy_;
 
     nn_float_t X1[NODE_COUNT][EMBEDDING_DIM];

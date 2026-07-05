@@ -234,18 +234,11 @@ mlp::mlp
     ,   x2(meta+i_dim*max_batch)
 {}
 
-void value_head::backward(float dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const
+void wdl_head::backward(WDL dEdy, float dEdX[][EMBEDDING_DIM], float grad[]) const
 {
-    float dy[3] = {dEdy, 0, -dEdy};
+    float dy[3] = {dEdy.win, dEdy.draw, dEdy.loss};
     float dx[2][EMBEDDING_DIM] = {};
     float tmp[WDL_INPUT_DIM*WDL_HIDDEN_DIM];
-
-    auto dot = dy[0] * y_wdl_[0]
-            +  dy[2] * y_wdl_[2];
-
-    dy[0] = y_wdl_[0] * (dy[0] - dot);
-    dy[1] = y_wdl_[1] * (dy[1] - dot);
-    dy[2] = y_wdl_[2] * (dy[2] - dot);
 
     wdl_.backward(dy, dx[0], grad, tmp, 1);
 
@@ -253,35 +246,20 @@ void value_head::backward(float dEdy, float dEdX[][EMBEDDING_DIM], float grad[])
     std::memcpy(dEdX[G2], dx[1], sizeof(float) * EMBEDDING_DIM);
 }
 
-float value_head::forward(float X[][EMBEDDING_DIM])
+WDL wdl_head::forward(float X[][EMBEDDING_DIM])
 {
     nn_float_t x[2][EMBEDDING_DIM];
-
-    auto& win=y_wdl_[0];
-    auto& draw=y_wdl_[1];
-    auto& loss=y_wdl_[2];
+    nn_float_t y[3] = {};
 
     std::memcpy(x[0], X[G1], sizeof(float) * EMBEDDING_DIM);
     std::memcpy(x[1], X[G2], sizeof(float) * EMBEDDING_DIM);
 
-    wdl_.forward(x[0], y_wdl_, 1);
+    wdl_.forward(x[0], y, 1);
 
-    auto max = std::max(win, std::max(draw, loss));
-
-    win = std::exp(win - max);
-    draw = std::exp(draw - max);
-    loss = std::exp(loss - max);
-
-    auto sum = win + draw + loss;
-
-    win /= sum;
-    draw /= sum;
-    loss /= sum;
-
-    return win - loss;
+    return WDL(y[0], y[1], y[2]);
 }
 
-value_head::value_head(const float params[])
+wdl_head::wdl_head(const float params[])
     : wdl_(params, WDL_INPUT_DIM, WDL_HIDDEN_DIM, WDL_OUTPUT_DIM, meta_, 1)
 {}
 
@@ -418,10 +396,10 @@ policy_head::policy_head(const float params[])
 
 neural_output::neural_output
     (
-            const value& _v
+            const WDL& _wdl
         ,   const logits& _z
     )
-        :   v(_v)
+        :   wdl(_wdl)
         ,   z(_z)
 {}
 
@@ -447,7 +425,7 @@ neural_output forward_pass::operator()(const descriptor& d)
     MESSAGE_PASSING(3);
 
     return neural_output( 
-                value_.forward(Y)
+                wdl_.forward(Y)
               , policy_.forward(d, Y)
            );
 }
@@ -462,7 +440,7 @@ forward_pass::forward_pass(const float params[])
     ,   INIT_MESSAGE_PASSER(1)
     ,   INIT_MESSAGE_PASSER(2)
     ,   INIT_MESSAGE_PASSER(3)
-    ,   value_(params+WDL_PARAM_OFFSET)
+    ,   wdl_(params+WDL_PARAM_OFFSET)
     ,   policy_(params+POLICY_PARAM_OFFSET)
     ,   X1 {}
     ,   X2 {}
@@ -479,7 +457,7 @@ void backward_pass::operator()(const neural_output& dEdy, float grad[])
     float dX[NODE_COUNT][EMBEDDING_DIM]={};
 
     fpass_.policy_.backward(*fpass_.d_, dEdy.z, dY, grad + POLICY_PARAM_OFFSET);
-    fpass_.value_.backward(dEdy.v, dY, grad + WDL_PARAM_OFFSET);
+    fpass_.wdl_.backward(dEdy.wdl, dY, grad + WDL_PARAM_OFFSET);
 
     temp_.resize(fpass_.mp1_temp_.size());
 
