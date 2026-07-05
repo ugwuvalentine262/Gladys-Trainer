@@ -6,9 +6,9 @@
  * modification, or distribution is not permitted.
  */
 
-#include <cstring>
 #include <Eigen/Dense>
 #include <cmath>
+#include <cstring>
 
 #include "loss.hpp"
 #include "policy.hpp"
@@ -49,8 +49,8 @@ public:
         auto max = std::max(y_hat.win, std::max(y_hat.draw, y_hat.loss));
 
         auto kw = std::exp(y_hat.win - max);
-        auto kd = std::exp(y_hat.win - max);
-        auto kl = std::exp(y_hat.win - max);
+        auto kd = std::exp(y_hat.draw - max);
+        auto kl = std::exp(y_hat.loss - max);
 
         auto sum = kw + kd + kl;
 
