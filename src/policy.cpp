@@ -168,7 +168,7 @@ policy::policy(const std::string& pi, bool white)
     std::string token;
     std::istringstream iss(pi);
 
-    float sum=0.0f;
+    double sum=0.0;
 
     while ((iss >> token))
     {
