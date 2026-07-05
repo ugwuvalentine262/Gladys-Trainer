@@ -49,11 +49,11 @@ void propagator::iterator()
         {
             std::lock_guard<std::mutex> lock(mtx_);
 
-        	mse_sum_ += error.mse;
-        	mae_sum_ += error.mae;
-		    cce_sum_ += error.cce;
-		    acc1_sum_ += error.top_1_accuracy;
-		    acc3_sum_ += error.top_3_accuracy;
+            q_mae_ += error.q_mae;
+            wdl_cce_ += error.wdl_cce;
+            pi_cce_ += error.pi_cce;
+            pi_accuracy1_ += error.pi_accuracy1;
+            pi_accuracy3_ += error.pi_accuracy3;
 
             if (!--rem_) {
                 batch_ready_=false;
@@ -72,11 +72,11 @@ propagator::propagator
 	(
 			parameters& params
 		,   size_t& rem
-		,   float& mse_sum
-		,   float& mae_sum
-		,   float& cce_sum
-		,   float& acc1_sum
-		,   float& acc3_sum
+		,   float& q_mae
+		,   float& wdl_cce
+		,   float& pi_cce
+		,   float& pi_accuracy1
+		,   float& pi_accuracy3
 		,   std::mutex& mtx
 		,   std::condition_variable& work_cv
 		,   std::condition_variable& done_cv
@@ -86,11 +86,11 @@ propagator::propagator
 	)
 		:   params_(params.data)
         ,   rem_(rem)
-        ,   mse_sum_(mse_sum)
-        ,   mae_sum_(mae_sum)
-        ,   cce_sum_(cce_sum)
-        ,   acc1_sum_(acc1_sum)
-        ,   acc3_sum_(acc3_sum)
+	    ,   q_mae_(q_mae)
+	    ,   wdl_cce_(wdl_cce)
+	    ,   pi_cce_(pi_cce)
+	    ,   pi_accuracy1_(pi_accuracy1)
+	    ,   pi_accuracy3_(pi_accuracy3)
 		,   thread_(&propagator::iterator, this)
 		,   mtx_(mtx)
 		,   work_cv_(work_cv)

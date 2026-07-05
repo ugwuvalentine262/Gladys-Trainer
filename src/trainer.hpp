@@ -36,11 +36,11 @@ private:
 	const size_t batch_size_;
 
 	size_t rem_;
-	float mse_sum_;
-	float mae_sum_;
-	float cce_sum_;
-	float acc1_sum_;
-	float acc3_sum_;
+	float q_mae_;
+	float wdl_cce_;
+	float pi_cce_;
+	float pi_accuracy1_;
+	float pi_accuracy3_;
 	std::mutex mtx_;
 	std::condition_variable work_cv_;
 	std::condition_variable done_cv_;

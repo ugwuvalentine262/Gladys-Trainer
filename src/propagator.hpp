@@ -29,11 +29,11 @@ private:
 	float * const params_;
 
 	size_t& rem_;
-	float& mse_sum_;
-	float& mae_sum_;
-	float& cce_sum_;
-	float& acc1_sum_;
-	float& acc3_sum_;
+	float& q_mae_;
+	float& wdl_cce_;
+	float& pi_cce_;
+	float& pi_accuracy1_;
+	float& pi_accuracy3_;
 	std::thread thread_;
 	std::mutex& mtx_;
 	std::condition_variable& work_cv_;
@@ -56,11 +56,11 @@ public:
 	propagator(
 			parameters& params
 		,   size_t& rem
-		,   float& mse_sum
-		,   float& mae_sum
-		,   float& cce_sum
-		,   float& acc1_sum
-		,   float& acc3_sum
+		,   float& q_mae
+		,   float& wdl_cce
+		,   float& pi_cce
+		,   float& pi_accuracy1
+		,   float& pi_accuracy3
 		,   std::mutex& mtx
 		,   std::condition_variable& work_cv
 		,   std::condition_variable& done_cv

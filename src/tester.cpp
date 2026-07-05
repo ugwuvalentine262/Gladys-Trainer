@@ -11,11 +11,46 @@
 #include <chrono>
 #include <cstdlib>
 #include <string>
+#include <list>
+#include <stack>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 #include "dataset.hpp"
-#include "tester.hpp"
 #include "io.hpp"
 #include "loss.hpp"
+#include "neural.hpp"
+
+class tester 
+{
+
+private:
+
+	dataset dataset_;
+	std::stack<const sample*> stack_;
+	parameters params_;
+	std::list<std::thread> threads_;
+	std::condition_variable cv_;
+	std::mutex mtx_;
+	size_t rem_;
+	float q_mae_;
+	float wdl_cce_;
+	float pi_cce_;
+	float pi_accuracy1_;
+	float pi_accuracy3_;
+
+private:
+
+	void iterator();
+
+public:
+
+	~tester();
+
+	tester(size_t workers, std::ofstream& log);
+
+};
 
 void tester::iterator()
 {
@@ -44,11 +79,11 @@ void tester::iterator()
         {
             std::lock_guard<std::mutex> lock(mtx_);
 
-        	mse_sum_ += error.mse;
-        	mae_sum_ += error.mae;
-		    cce_sum_ += error.cce;
-		    acc1_sum_ += error.top_1_accuracy;
-		    acc3_sum_ += error.top_3_accuracy;
+            q_mae_ += error.q_mae;
+            wdl_cce_ += error.wdl_cce;
+            pi_cce_ += error.pi_cce;
+            pi_accuracy1_ += error.pi_accuracy1;
+            pi_accuracy3_ += error.pi_accuracy3;
 
             if (--rem_==0) {
                 cv_.notify_one();
@@ -74,11 +109,11 @@ tester::tester(
 		,   params_ {}
 		,   threads_{}
 		,   rem_(dataset_.size())
-		,   mse_sum_(0)
-		,   mae_sum_(0)
-		,   cce_sum_(0)
-		,   acc1_sum_(0)
-		,   acc3_sum_(0)
+	    ,   q_mae_(0)
+	    ,   wdl_cce_(0)
+	    ,   pi_cce_(0)
+	    ,   pi_accuracy1_(0)
+	    ,   pi_accuracy3_(0)
 {
 	std::ifstream file(NNFILE, std::ios::binary);
 
@@ -121,11 +156,11 @@ tester::tester(
 
 	auto end = clock::now();
 
-	auto mse_error = mse_sum_ / dataset_.size();
-	auto mae_error = mae_sum_ / dataset_.size();
-	auto cce_error = cce_sum_ / dataset_.size();
-	auto top_1_accuracy = acc1_sum_ / dataset_.size();
-	auto top_3_accuracy = acc3_sum_ / dataset_.size();
+    q_mae_ /= dataset_.size();
+    wdl_cce_ /= dataset_.size();
+    pi_cce_ /= dataset_.size();
+    pi_accuracy1_ /= dataset_.size();
+    pi_accuracy3_ /= dataset_.size();
 
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
@@ -138,21 +173,22 @@ tester::tester(
 	log
 		<< std::fixed 
 		<< std::setprecision(6)
-		<< "mse: " 
+		<< "q-mae: " 
 		<< std::setw(8)
-		<< mse_error
-		<< " | mae: " 
+		<< q_mae_
+		<< " | wdl-cce: " 
 		<< std::setw(8)
-		<< mae_error
-		<< " | cce: "
+		<< wdl_cce_
+		<< " | pi-cce: "
 		<< std::setw(8)
-		<< cce_error
-		<< " | top-1-accuracy: "
+		<< pi_cce_
+		<< " | pi-accuracy: "
 		<< std::setw(8) 
-		<< top_1_accuracy
-		<< " | top-3-accuracy: "
+		<< pi_accuracy1_
+		<< "(Top-1) "
 		<< std::setw(8) 
-		<< top_3_accuracy
+		<< pi_accuracy3_
+        << "(Top-3)"
 		<< " | elapsed: "
 		<< std::setfill('0')
 		<< std::setw(2)

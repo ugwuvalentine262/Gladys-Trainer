@@ -29,7 +29,7 @@ void trainer::train()
 
     dataset_.shuffle();
 
-	mse_sum_=mae_sum_=cce_sum_=acc1_sum_=acc3_sum_=0;
+    q_mae_=wdl_cce_=pi_cce_=pi_accuracy1_=pi_accuracy3_=0;
 
 	for (const auto& sample : dataset_)
 	{    
@@ -75,11 +75,11 @@ void trainer::train()
 
 	auto end = clock::now();
 
-	auto mae_error = mae_sum_ / dataset_.size();
-	auto mse_error = mse_sum_ / dataset_.size();
-	auto cce_error = cce_sum_ / dataset_.size();
-	auto top_1_accuracy = acc1_sum_ / dataset_.size();
-	auto top_3_accuracy = acc3_sum_ / dataset_.size();
+    q_mae_ /= dataset_.size();
+    wdl_cce_ /= dataset_.size();
+    pi_cce_ /= dataset_.size();
+    pi_accuracy1_ /= dataset_.size();
+    pi_accuracy3_ /= dataset_.size();
 
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
@@ -89,24 +89,25 @@ void trainer::train()
 	elapsed.min = (seconds % 3600) / 60;
 	elapsed.sec = seconds % 60;
 
-	log_ 
+	log_
 		<< std::fixed 
 		<< std::setprecision(6)
-		<< "mse: " 
+		<< "q-mae: " 
 		<< std::setw(8)
-		<< mse_error
-		<< " | mae: " 
+		<< q_mae_
+		<< " | wdl-cce: " 
 		<< std::setw(8)
-		<< mae_error
-		<< " | cce: "
+		<< wdl_cce_
+		<< " | pi-cce: "
 		<< std::setw(8)
-		<< cce_error
-		<< " | top-1-accuracy: "
+		<< pi_cce_
+		<< " | pi-accuracy: "
 		<< std::setw(8) 
-		<< top_1_accuracy
-		<< " | top-3-accuracy: "
+		<< pi_accuracy1_
+		<< "(Top-1) "
 		<< std::setw(8) 
-		<< top_3_accuracy
+		<< pi_accuracy3_
+        << "(Top-3)"
 		<< " | elapsed: "
 		<< std::setfill('0')
 		<< std::setw(2)
@@ -160,11 +161,11 @@ trainer::trainer(
 		,   adam_(params_.data, grad_.data, alpha, lambda)
 		,   batch_size_(batch_size)
 		,   rem_(0)
-		,   mse_sum_(0)
-		,   mae_sum_(0)
-		,   cce_sum_(0)
-		,   acc1_sum_(0)
-		,   acc3_sum_(0)
+		,   q_mae_(0)
+		,   wdl_cce_(0)
+		,   pi_cce_(0)
+		,   pi_accuracy1_(0)
+		,   pi_accuracy3_(0)
 		,   batch_ {}
         ,   batch_ready_(false)
 		,   stop_(false)
@@ -179,11 +180,11 @@ trainer::trainer(
 
 				params_
 			,   rem_
-			,   mse_sum_
-			,   mae_sum_
-			,   cce_sum_
-			,   acc1_sum_
-			,   acc3_sum_
+			,   q_mae_
+			,   wdl_cce_
+			,   pi_cce_
+			,   pi_accuracy1_
+			,   pi_accuracy3_
 			,   mtx_
 			,   work_cv_
             ,   done_cv_
@@ -304,7 +305,7 @@ int main(int argc, char *argv[])
 	for (auto i=0; i< epochs; i++) 
 	{
         if (!workers) {
-            log << "There are not workers to train the model." << std::endl;
+            log << "There are no workers to train the model." << std::endl;
             std::exit(EXIT_FAILURE);
         }
 		trainer.train();
