@@ -16,6 +16,7 @@
 #include <queue>
 #include <string>
 
+#include "WDL.hpp"
 #include "descriptor.hpp"
 #include "policy.hpp"
 #include "neural.hpp"
@@ -29,7 +30,7 @@ private:
 
 	const board brd_;
 	const Policy policy_;
-	const value eval_;
+	const WDL wdl_;
 
 public:
 
@@ -38,7 +39,7 @@ public:
 
 	sample(
                 const std::string& fen
-            ,   const std::string& eval
+            ,   const std::string& wdl
             ,   const std::string& policy
         );
 

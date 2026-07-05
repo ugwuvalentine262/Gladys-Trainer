@@ -6,9 +6,8 @@
  * modification, or distribution is not permitted.
  */
 
-#include <random>
 #include <algorithm>
-#include <cmath>
+#include <random>
 
 #include "descriptor.hpp"
 #include "dataset.hpp"
@@ -22,17 +21,17 @@ descriptor sample::input() const
 neural_output sample::output() const
 {
     policy pi(policy_, brd_.white);
-    return neural_output(eval_, pi);
+    return neural_output(wdl_, pi);
 }
 
 sample::sample(
             const std::string& fen
-        ,   const std::string& eval
+        ,   const std::string& wdl
         ,   const std::string& policy
     )
         :   brd_(fen)
         ,   policy_(policy)
-        ,   eval_(std::tanh(std::stoi(eval) / SCALE))
+        ,   wdl_(wdl)
 {}
 
 input_data::input_data(const sample *sample, gradients& grad)
@@ -57,17 +56,17 @@ dataset::dataset(std::ofstream& log)
     :   data_ {}
 {
     std::ifstream fen(DATASET_DIR "/fen.txt");
-    std::ifstream eval(DATASET_DIR "/eval.txt");
+    std::ifstream wdl(DATASET_DIR "/wdl.txt");
     std::ifstream policy(DATASET_DIR "/policy.txt");
 
-    if (!fen || !eval || !policy)
+    if (!fen || !wdl || !policy)
     {
         log << "Unable to open dataset" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     std::string fen_str;
-    std::string eval_str;
+    std::string wdl_str;
     std::string policy_str;
 
     while (std::getline(fen, fen_str))
@@ -77,13 +76,13 @@ dataset::dataset(std::ofstream& log)
             exit(EXIT_FAILURE);
         }
 
-        if (!std::getline(eval, eval_str)) {
-            log << "eval is inconsistent with fen" << std::endl;
+        if (!std::getline(wdl, wdl_str)) {
+            log << "wdl is inconsistent with fen" << std::endl;
             exit(EXIT_FAILURE);
         }
 
         try {
-            data_.emplace_back(fen_str, eval_str, policy_str); 
+            data_.emplace_back(fen_str, wdl_str, policy_str); 
         }
         catch(const policy::bad&)
         {
