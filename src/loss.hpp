@@ -14,26 +14,27 @@
 struct error
 {
 	error(
-			float mse_
-		,   float mae_
-		,   float cce_
-		,   float top_1_accuracy_
-		,   float top_3_accuracy_
+			float q_mae_
+		,   float wdl_cce_
+		,   float pi_cce_
+		,   float pi_accuracy1_
+		,   float pi_accuracy3_
 	)
-		: mse(mse_)
-        , mae(mae_)
-		, cce(cce_)
-		, top_1_accuracy(top_1_accuracy_)
-		, top_3_accuracy(top_3_accuracy_)
+		: q_mae(q_mae_)
+        , wdl_cce(wdl_cce_)
+		, pi_cce(pi_cce_)
+		, pi_accuracy1(pi_accuracy1_)
+		, pi_accuracy3(pi_accuracy3_)
 	{}
 
 public:
 
-	const float mse;
-	const float mae;
-	const float cce;
-	const float top_1_accuracy;
-	const float top_3_accuracy;
+	const float q_mae;
+	const float wdl_cce;
+	const float pi_cce;
+	const float pi_accuracy1;
+	const float pi_accuracy3;
+
 };
 
 struct loss

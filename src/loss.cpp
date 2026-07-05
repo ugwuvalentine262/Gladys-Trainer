@@ -18,6 +18,13 @@ class cce
 
 public:
 
+    static float forward(const WDL& y_hat, const WDL& y)
+    {
+        auto max = std::max(y_hat.win, std::max(y_hat.draw, y_hat.loss));
+        return -(y.win*y_hat.win + y.draw*y_hat.draw + y.loss*y_hat.loss) 
+            +  max + std::log(std::exp(y_hat.win-max)+std::exp(y_hat.draw-max)+std::exp(y_hat.loss-max));
+    }
+
 	static float forward(const logits& z, const logits& y)
 	{
         float _z[128], _y[128], _x[128];
@@ -36,6 +43,23 @@ public:
 
         return -v.dot(u) + max + std::log(w.sum());
 	}
+
+	static WDL backward(const WDL& y_hat, const WDL& y)
+    {
+        auto max = std::max(y_hat.win, std::max(y_hat.draw, y_hat.loss));
+
+        auto kw = std::exp(y_hat.win - max);
+        auto kd = std::exp(y_hat.win - max);
+        auto kl = std::exp(y_hat.win - max);
+
+        auto sum = kw + kd + kl;
+
+        return WDL(
+                    kw / sum - y.win
+                ,   kd / sum - y.draw
+                ,   kl / sum - y.loss
+            );
+    }
 
 	static logits backward(const logits& z, const logits& y)
 	{
@@ -58,40 +82,19 @@ public:
 
 };
 
-class mse
+struct mae
 {
-
-public:
-
-	static float forward(float y_hat, float y)
+	static float forward(const WDL& y_hat, const WDL& y)
 	{
-		float x = y_hat - y;
-		return x * x;
-	}
-
-	static float backward(float y_hat, float y)
-	{
-		return (y_hat - y) * 2.0f;
-	}
-
-};
-
-class mae
-{
-
-public:
-
-	static float forward(float y_hat, float y)
-	{
-		return std::fabs(y_hat - y);
+		return std::fabs(y_hat.q() - y.q());
 	}
 };
 
 error loss::forward(const neural_output& y_hat, const neural_output& y)
 {
 	return  error(
-					mse::forward(y_hat.v, y.v)
-				,   mae::forward(y_hat.v, y.v)
+					mae::forward(y_hat.wdl, y.wdl)
+				,   cce::forward(y_hat.wdl, y.wdl)
 				,   cce::forward(y_hat.z, y.z)
 				,   y_hat.z.accuracy(y.z, 1)
 				,   y_hat.z.accuracy(y.z, 3)
@@ -101,7 +104,7 @@ error loss::forward(const neural_output& y_hat, const neural_output& y)
 neural_output loss::backward(const neural_output& y_hat, const neural_output& y)
 {
 	return  neural_output(
-					mse::backward(y_hat.v, y.v)
+					cce::backward(y_hat.wdl, y.wdl)
 				,   cce::backward(y_hat.z, y.z)
 			);
 }
