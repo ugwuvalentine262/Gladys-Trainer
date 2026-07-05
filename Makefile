@@ -10,7 +10,6 @@ BREAK ?= 0
 LOG ?= TRUE
 EMBEDDING ?= 16 # specified at compile-time
 RANGE ?= 0.4    # range of values used for initializing weights
-SCALE ?= 400.0  # a constant for scaling centi-pawn values
 
 override CXX := g++
 override BACKUP_DIR := $(CURDIR)/backup
@@ -29,7 +28,7 @@ override EIGEN_INCLUDE_DIR := $(CURDIR)/external/Eigen
 override CXXFLAGS := -I$(LOGICNN_INCLUDE_DIR) -I$(EIGEN_INCLUDE_DIR) -Werror -Wextra -Wall -std=c++23 -O3 -march=native
 override LDFLAGS := -L$(CURDIR)/lib/LogicNN/release -llogicnn_backprop -llogicnn -lm
 override TRAINER_SRC := $(filter-out src/tester.cpp, $(wildcard src/*.cpp))
-override TRAINER_HDR := $(filter-out src/tester.hpp, $(wildcard src/*.hpp))
+override TRAINER_HDR := $(wildcard src/*.hpp)
 override TRAINER_OBJ := $(addprefix build/trainer/, $(TRAINER_SRC:src/%.cpp=%.o))
 override TESTER_SRC := $(filter-out src/trainer.cpp src/adam.cpp, $(wildcard src/*.cpp))
 override TESTER_HDR := $(filter-out src/trainer.hpp src/adam.hpp, $(wildcard src/*.hpp))
@@ -81,7 +80,7 @@ build: bin/trainer bin/tester
 
 rebuild:
 	@rm -rf build bin lib
-	@$(MAKE) build >/dev/null
+	@$(MAKE) build EMBEDDING=$(EMBEDDING) RANGE=$(RANGE) >/dev/null
 	@echo "Finished building training and test utilities!"
 
 init:
