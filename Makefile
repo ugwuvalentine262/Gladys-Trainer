@@ -87,7 +87,6 @@ help:
 	@echo "-----------------------------------------------------------------------"
 
 build: bin/trainer bin/tester
-	@rm -rf result backup
 	@echo "Finished building training and test utilities!"
 
 rebuild:
@@ -96,7 +95,7 @@ rebuild:
 	@echo "Finished building training and test utilities!"
 
 init:
-	@rm -rf $(RESULT_DIR)
+	@rm -rf $(RESULT_DIR) $(BACKUP_DIR)
 	@mkdir -p $(RESULT_DIR)
 	@$(call headings, $(RESULT_DIR)/$(TRAINLOG))
 	@$(call headings, $(RESULT_DIR)/$(TESTLOG))
