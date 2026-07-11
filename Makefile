@@ -7,7 +7,6 @@ ALPHA ?= 0.001
 LAMBDA ?= 0.01
 BATCH ?= 50
 BREAK ?= 0
-LOG ?= TRUE
 EMBEDDING ?= 16 # specified at compile-time
 RANGE ?= 0.4    # range of values used for initializing weights
 
@@ -17,9 +16,10 @@ override RESULT_DIR := $(CURDIR)/result
 override DATASET_DIR := $(CURDIR)/dataset
 override ADAMFILE := adam
 override NNFILE := nn
-override LOGFILE := sessions.txt
+override SESSIONSLOG := sessions.txt
 override TRAINLOG := trainlog.txt
 override TESTLOG := testlog.txt
+override LOGFILE := log.txt
 override TRAINSET_DIR := $(DATASET_DIR)/trainset
 override TESTSET_DIR := $(DATASET_DIR)/testset
 override LOGICNN_PROJECT_ROOT := $(CURDIR)/external/LogicNN
@@ -33,25 +33,29 @@ override TRAINER_OBJ := $(addprefix build/trainer/, $(TRAINER_SRC:src/%.cpp=%.o)
 override TESTER_SRC := $(filter-out src/trainer.cpp src/adam.cpp, $(wildcard src/*.cpp))
 override TESTER_HDR := $(filter-out src/trainer.hpp src/adam.hpp, $(wildcard src/*.hpp))
 override TESTER_OBJ := $(addprefix build/tester/, $(TESTER_SRC:src/%.cpp=%.o))
-
-ifeq ($(LOG), TRUE)
-override OUTPUT := >> $(RESULT_DIR)/$(LOGFILE)
-else ifeq ($(LOG), ON)
-override OUTPUT := >> $(RESULT_DIR)/$(LOGFILE)
-else ifeq ($(LOG), 1)
-override OUTPUT := >> $(RESULT_DIR)/$(LOGFILE)
-endif
+override LOGGER := 2>> $(RESULT_DIR)/$(LOGFILE)
+override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(SESSIONSLOG)
+override TEST_LOGGER := >> $(RESULT_DIR)/$(TESTLOG) $(LOGGER)
+override TRAIN_LOGGER := >> $(RESULT_DIR)/$(TRAINLOG) $(LOGGER)
 
 # -------------------------- macros --------------------------
 
 define copy
 	@rm -rf $(2)
 	@mkdir -p $(2)
-	@cp $(1)/$(NNFILE)   $(2)/$(NNFILE)   2>/dev/null || true
-	@cp $(1)/$(ADAMFILE) $(2)/$(ADAMFILE) 2>/dev/null || true
-	@cp $(1)/$(TRAINLOG) $(2)/$(TRAINLOG) 2>/dev/null || true
-	@cp $(1)/$(TESTLOG)  $(2)/$(TESTLOG)  2>/dev/null || true
-	@cp $(1)/$(LOGFILE)  $(2)/$(LOGFILE)  2>/dev/null || true
+	@cp $(1)/$(NNFILE)       $(2)/$(NNFILE)       2>/dev/null || true
+	@cp $(1)/$(ADAMFILE)     $(2)/$(ADAMFILE)     2>/dev/null || true
+	@cp $(1)/$(TRAINLOG)     $(2)/$(TRAINLOG)     2>/dev/null || true
+	@cp $(1)/$(TESTLOG)      $(2)/$(TESTLOG)      2>/dev/null || true
+	@cp $(1)/$(SESSIONSLOG)  $(2)/$(SESSIONSLOG)  2>/dev/null || true
+	@cp $(1)/$(LOGFILE)      $(2)/$(LOGFILE)      2>/dev/null || true
+endef
+
+define headings
+	@echo "   q-mae   |  wdl-cce  |   π-cce   |      π-accuracy       | elapsed " >  $(1)
+	@echo "-----------|-----------|-----------|-----------------------|----------" >> $(1)
+	@echo "           |           |           |   TOP-1   |   TOP-3   |          " >> $(1)
+	@echo "-----------|-----------|-----------|-----------|-----------|----------" >> $(1)
 endef
 
 # -------------------------- rules --------------------------
@@ -74,7 +78,6 @@ help:
 	@echo "-----------------------------------------------------------------------"
 
 build: bin/trainer bin/tester
-	@clear
 	@rm -rf result backup
 	@echo "Finished building training and test utilities!"
 
@@ -86,36 +89,39 @@ rebuild:
 init:
 	@rm -rf $(RESULT_DIR)
 	@mkdir -p $(RESULT_DIR)
-	@./bin/trainer epochs 0 workers 0
+	@$(call headings, $(RESULT_DIR)/$(TRAINLOG))
+	@$(call headings, $(RESULT_DIR)/$(TESTLOG))
+	@./bin/trainer epochs 0 workers 0 $(LOGGER)
+	@./bin/tester $(TEST_LOGGER)
 
 run:
 	@mkdir -p $(RESULT_DIR)
-	@echo "-------------------------------------------------------------------" $(OUTPUT)
-	@echo "Sessions Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session." $(OUTPUT)
-	@echo "-------------------------------------------------------------------\n" $(OUTPUT)
+	@echo "-------------------------------------------------------------------" $(SESSIONS_LOGGER)
+	@echo "Sessions Started: $(SESSIONS) session(s) with $(EPOCHS) epoch(s) per session." $(SESSIONS_LOGGER)
+	@echo "-------------------------------------------------------------------\n" $(SESSIONS_LOGGER)
 	@i=1; while [ $$i -le $(SESSIONS) ]; do \
-		echo "Session $$i started..." $(OUTPUT); \
+		echo "Session $$i started..." $(SESSIONS_LOGGER); \
 		make backup 1>/dev/null 2>&1; \
-		echo "Backup Complete!" $(OUTPUT); \
-		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) lambda $(LAMBDA) workers $(WORKERS) break $(BREAK); \
-		echo "$(EPOCHS) training epoch(s) completed!" $(OUTPUT); \
-		./bin/tester workers $(WORKERS); \
-		echo "Testing Complete!" $(OUTPUT); \
-		echo "Session $$i completed!\n" $(OUTPUT); \
+		echo "Backup Complete!" $(SESSIONS_LOGGER); \
+		./bin/trainer epochs $(EPOCHS) batch $(BATCH) alpha $(ALPHA) lambda $(LAMBDA) workers $(WORKERS) break $(BREAK) $(TRAIN_LOGGER); \
+		echo "$(EPOCHS) training epoch(s) completed!" $(SESSIONS_LOGGER); \
+		./bin/tester workers $(WORKERS) $(TEST_LOGGER); \
+		echo "Testing Complete!" $(SESSIONS_LOGGER); \
+		echo "Session $$i completed!\n" $(SESSIONS_LOGGER); \
 		i=$$((i+1)); \
 	done
-	@echo "$(SESSIONS) training session(s) were completed successfully!\n" $(OUTPUT)
+	@echo "$(SESSIONS) training session(s) were completed successfully!\n" $(SESSIONS_LOGGER)
 
 epoch:
 	@mkdir -p $(RESULT_DIR)
 	@echo "Training neural network..."
-	@./bin/trainer epochs 1 batch $(BATCH) alpha $(ALPHA) lambda $(LAMBDA) workers $(WORKERS) break $(BREAK)
+	@./bin/trainer epochs 1 batch $(BATCH) alpha $(ALPHA) lambda $(LAMBDA) workers $(WORKERS) break $(BREAK) $(TRAIN_LOGGER)
 	@echo "1 training epoch completed!"
 
 eval:
 	@mkdir -p $(RESULT_DIR)
 	@echo "Testing neural network..."
-	@./bin/tester workers $(WORKERS)
+	@./bin/tester workers $(WORKERS) $(TEST_LOGGER)
 	@echo "Testing Complete!"
 
 backup:
@@ -154,11 +160,11 @@ bin/tester: _lib $(TESTER_OBJ) $(TESTER_HDR)
 
 build/trainer/%.o: src/%.cpp $(TRAINER_HDR)
 	@mkdir -p build/trainer
-	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DSCALE=$(SCALE) -DRANGE=$(RANGE) -DLOGFILE=\"$(RESULT_DIR)/$(TRAINLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DADAMFILE=\"$(RESULT_DIR)/$(ADAMFILE)\" -DDATASET_DIR=\"$(TRAINSET_DIR)\" -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DRANGE=$(RANGE) -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DADAMFILE=\"$(RESULT_DIR)/$(ADAMFILE)\" -DDATASET_DIR=\"$(TRAINSET_DIR)\" -c $< -o $@
 
 build/tester/%.o: src/%.cpp $(TESTER_HDR)
 	@mkdir -p build/tester
-	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DSCALE=$(SCALE) -DLOGFILE=\"$(RESULT_DIR)/$(TESTLOG)\" -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -DEMBEDDING_DIM=$(EMBEDDING) -DNNFILE=\"$(RESULT_DIR)/$(NNFILE)\" -DDATASET_DIR=\"$(TESTSET_DIR)\" -c $< -o $@
 
 .PRECIOUS: build/trainer/%.o build/tester/%.o build/LogicNN/release/%.o
 .PHONY: help build rebuild init run epoch eval backup restore refresh reset clean
