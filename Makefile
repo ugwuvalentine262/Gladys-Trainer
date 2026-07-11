@@ -9,6 +9,7 @@ BATCH ?= 50
 BREAK ?= 0
 EMBEDDING ?= 16 # specified at compile-time
 RANGE ?= 0.4    # range of values used for initializing weights
+LOG ?= TRUE
 
 override CXX := g++
 override BACKUP_DIR := $(CURDIR)/backup
@@ -33,8 +34,16 @@ override TRAINER_OBJ := $(addprefix build/trainer/, $(TRAINER_SRC:src/%.cpp=%.o)
 override TESTER_SRC := $(filter-out src/trainer.cpp src/adam.cpp, $(wildcard src/*.cpp))
 override TESTER_HDR := $(filter-out src/trainer.hpp src/adam.hpp, $(wildcard src/*.hpp))
 override TESTER_OBJ := $(addprefix build/tester/, $(TESTER_SRC:src/%.cpp=%.o))
-override LOGGER := 2>> $(RESULT_DIR)/$(LOGFILE)
+
+ifeq ($(LOG), TRUE)
 override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(SESSIONSLOG)
+else ifeq ($(LOG), ON)
+override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(SESSIONSLOG)
+else ifeq ($(LOG), 1)
+override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(SESSIONSLOG)
+endif
+
+override LOGGER := 2>> $(RESULT_DIR)/$(LOGFILE)
 override TEST_LOGGER := >> $(RESULT_DIR)/$(TESTLOG) $(LOGGER)
 override TRAIN_LOGGER := >> $(RESULT_DIR)/$(TRAINLOG) $(LOGGER)
 
