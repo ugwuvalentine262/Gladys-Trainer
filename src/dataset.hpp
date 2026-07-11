@@ -11,7 +11,6 @@
 
 #include <vector>
 #include <list>
-#include <fstream>
 #include <array>
 #include <queue>
 #include <string>
@@ -72,7 +71,7 @@ public:
 
 	void shuffle();
 
-	dataset(std::ofstream& log);
+	dataset();
 
 };
 

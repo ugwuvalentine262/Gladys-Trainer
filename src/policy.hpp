@@ -13,8 +13,6 @@
 
 struct move
 {
-    struct bad {};
-
 	int from=-1;
 	int to=-1;
 	int promo=-1;
@@ -81,8 +79,6 @@ public:
 
 struct policy : public logits
 {
-    struct bad {};
-
     policy()=default;
     policy(const std::string& pi, bool white);
     policy(const policy& pi);

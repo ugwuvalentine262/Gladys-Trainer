@@ -6,6 +6,8 @@
  * modification, or distribution is not permitted.
  */
 
+#include <fstream>
+#include <iostream>
 #include <algorithm>
 #include <random>
 
@@ -52,7 +54,7 @@ void dataset::shuffle()
     );
 }
 
-dataset::dataset(std::ofstream& log)
+dataset::dataset()
     :   data_ {}
 {
     std::ifstream fen(DATASET_DIR "/fen.txt");
@@ -61,7 +63,7 @@ dataset::dataset(std::ofstream& log)
 
     if (!fen || !wdl || !policy)
     {
-        log << "Unable to open dataset" << std::endl;
+        std::cerr << "Unable to open dataset" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -72,32 +74,22 @@ dataset::dataset(std::ofstream& log)
     while (std::getline(fen, fen_str))
     {
         if (!std::getline(policy, policy_str)) {
-            log << "policy is inconsistent with fen" << std::endl;
-            exit(EXIT_FAILURE);
+            std::cerr << "policy is inconsistent with fen" << std::endl;
+            std::exit(EXIT_FAILURE);
         }
 
         if (!std::getline(wdl, wdl_str)) {
-            log << "wdl is inconsistent with fen" << std::endl;
-            exit(EXIT_FAILURE);
+            std::cerr << "wdl is inconsistent with fen" << std::endl;
+            std::exit(EXIT_FAILURE);
         }
 
         try {
             data_.emplace_back(fen_str, wdl_str, policy_str); 
         }
-        catch(const policy::bad&)
-        {
-            log << "bad policy in dataset" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        catch(const move::bad&)
-        {
-            log << "Illegal move in policy" << std::endl;
-            exit(EXIT_FAILURE);
-        }
         catch(...)
         {
-            log << "Unkown error occurred while initializing dataset" << std::endl;
-            exit(EXIT_FAILURE);
+            std::cerr << "Unkown error occurred while initializing dataset" << std::endl;
+            std::exit(EXIT_FAILURE);
         }
 
         samples::emplace_back(&data_.back());

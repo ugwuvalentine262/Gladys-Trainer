@@ -6,6 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
+#include <iostream>
 #include <cstring>
 #include <algorithm>
 #include <sstream>
@@ -20,14 +21,16 @@ move::move(const std::string& algebra, bool white)
                 || file > 'h' || rank > '8'
                )
             {
-                throw move::bad();
+                std::cerr << "Illegal move!" << std::endl;
+                std::exit(EXIT_FAILURE);
             }
             return (int)(rank - '1') * 8 + (int)(file - 'a');
         };
 
     if (algebra.size()!=4 && algebra.size()!=5)
     {
-        throw move::bad();
+        std::cerr << "Invalid move: " << algebra << std::endl;
+        std::exit(EXIT_FAILURE);
     }
 
     from = square(algebra[0], algebra[1]);
@@ -45,7 +48,10 @@ move::move(const std::string& algebra, bool white)
         case 'B': promo=0x3; break;
         case 'R': promo=0x4; break;
         case 'Q': promo=0x5; break;
-        default: throw move::bad();
+        default: {
+                std::cerr << "Invalid move: " << algebra << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
         }
     }
 
@@ -179,13 +185,16 @@ policy::policy(const std::string& pi, bool white)
             sum += vals_[count_];
         }
         else {
-            throw policy::bad();
+            std::cerr << "There is no probability score for move: " << token << std::endl;
+            std::exit(EXIT_FAILURE);
         }
         count_++;
     }
 
-    if (sum != 1) {
-        throw policy::bad();
+    if ((1 - sum) > 1E-6) 
+    {
+            std::cerr << "Sum of probabilities must equal be ~1" << std::endl;
+            std::exit(EXIT_FAILURE);
     }
 
     for (size_t i=0; i < count_; i++) 
