@@ -92,7 +92,7 @@ void trainer::train()
 
 	std::cout
 		<< std::fixed 
-		<< std::setprecision(6)
+		<< std::setprecision(7)
 		<< std::setw(10)
 		<< q_mae_
 		<< " |" 
@@ -107,7 +107,7 @@ void trainer::train()
 		<< " |"
 		<< std::setw(10)
 		<< pi_accuracy3_
-        << " |  "
+        << " | "
 		<< std::setfill('0')
 		<< std::setw(2)
 		<< elapsed.hr 

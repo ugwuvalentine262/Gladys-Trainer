@@ -163,7 +163,7 @@ tester::tester(size_t workers)
 
 	std::cout
 		<< std::fixed 
-		<< std::setprecision(6)
+		<< std::setprecision(7)
 		<< std::setw(10)
 		<< q_mae_
 		<< " |" 
@@ -178,7 +178,7 @@ tester::tester(size_t workers)
 		<< " |"
 		<< std::setw(10)
 		<< pi_accuracy3_
-        << " |  "
+        << " | "
 		<< std::setfill('0')
 		<< std::setw(2)
 		<< elapsed.hr 
