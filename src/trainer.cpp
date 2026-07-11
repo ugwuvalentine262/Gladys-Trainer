@@ -117,6 +117,7 @@ void trainer::train()
 		<< ":"
 		<< std::setw(2)
 		<< elapsed.sec
+		<< std::setfill(' ')
         << std::endl;
 
     std::ofstream file(NNFILE, std::ios::binary);

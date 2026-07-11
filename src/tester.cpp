@@ -188,6 +188,7 @@ tester::tester(size_t workers)
 		<< ":"
 		<< std::setw(2)
 		<< elapsed.sec
+		<< std::setfill(' ')
         << std::endl;
 }
 
