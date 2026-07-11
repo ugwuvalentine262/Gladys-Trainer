@@ -18,11 +18,11 @@ class cce
 
 public:
 
-    static float forward(const WDL& y_hat, const WDL& y)
+    static float forward(const WDL& z_hat, const WDL& y)
     {
-        auto max = std::max(y_hat.win, std::max(y_hat.draw, y_hat.loss));
-        return -(y.win*y_hat.win + y.draw*y_hat.draw + y.loss*y_hat.loss) 
-            +  max + std::log(std::exp(y_hat.win-max)+std::exp(y_hat.draw-max)+std::exp(y_hat.loss-max));
+        auto max = std::max(z_hat.win, std::max(z_hat.draw, z_hat.loss));
+        return -(y.win*z_hat.win + y.draw*z_hat.draw + y.loss*z_hat.loss) 
+            +  max + std::log(std::exp(z_hat.win-max)+std::exp(z_hat.draw-max)+std::exp(z_hat.loss-max));
     }
 
 	static float forward(const logits& z, const logits& y)
@@ -44,13 +44,13 @@ public:
         return -v.dot(u) + max + std::log(w.sum());
 	}
 
-	static WDL backward(const WDL& y_hat, const WDL& y)
+	static WDL backward(const WDL& z_hat, const WDL& y)
     {
-        auto max = std::max(y_hat.win, std::max(y_hat.draw, y_hat.loss));
+        auto max = std::max(z_hat.win, std::max(z_hat.draw, z_hat.loss));
 
-        auto kw = std::exp(y_hat.win - max);
-        auto kd = std::exp(y_hat.draw - max);
-        auto kl = std::exp(y_hat.loss - max);
+        auto kw = std::exp(z_hat.win - max);
+        auto kd = std::exp(z_hat.draw - max);
+        auto kl = std::exp(z_hat.loss - max);
 
         auto sum = kw + kd + kl;
 
@@ -84,8 +84,18 @@ public:
 
 struct mae
 {
-	static float forward(const WDL& y_hat, const WDL& y)
+	static float forward(const WDL& z_hat, const WDL& y)
 	{
+        auto max = std::max(z_hat.win, std::max(z_hat.draw, z_hat.loss));
+
+        auto kw = std::exp(z_hat.win  - max);
+        auto kd = std::exp(z_hat.draw - max);
+        auto kl = std::exp(z_hat.loss - max);
+
+        auto sum = kw + kd + kl;
+
+        WDL y_hat(kw/sum, kd/sum, kl/sum);
+
 		return std::fabs(y_hat.q() - y.q());
 	}
 };
