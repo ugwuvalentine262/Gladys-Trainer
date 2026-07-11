@@ -6,6 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
+#include <iostream>
 #include <chrono>
 #include <Eigen/Dense>
 #include <fstream>
@@ -62,7 +63,7 @@ void trainer::train()
             {
 		        if (std::isnan(p) || std::isinf(p))
                 {
-                    log_ 
+                    std::cerr
                         << "Undefined neural network parameters."
                         << std::endl;
 
@@ -89,26 +90,24 @@ void trainer::train()
 	elapsed.min = (seconds % 3600) / 60;
 	elapsed.sec = seconds % 60;
 
-	log_
+	std::cout
 		<< std::fixed 
 		<< std::setprecision(6)
-		<< "q-mae: " 
-		<< std::setw(8)
+		<< std::setw(10)
 		<< q_mae_
-		<< " | wdl-cce: " 
-		<< std::setw(8)
+		<< " |" 
+		<< std::setw(10)
 		<< wdl_cce_
-		<< " | pi-cce: "
-		<< std::setw(8)
+		<< " |"
+		<< std::setw(10)
 		<< pi_cce_
-		<< " | pi-accuracy: "
-		<< std::setw(8) 
+		<< " |"
+		<< std::setw(10)
 		<< pi_accuracy1_
-		<< "(Top-1) "
-		<< std::setw(8) 
+		<< " |"
+		<< std::setw(10)
 		<< pi_accuracy3_
-        << "(Top-3)"
-		<< " | elapsed: "
+        << " |  "
 		<< std::setfill('0')
 		<< std::setw(2)
 		<< elapsed.hr 
@@ -124,7 +123,7 @@ void trainer::train()
 
     if (!file) {
 
-		log_ 
+		std::cerr 
 	        << "Unable to save neural network to file."
 			<< std::endl;
 
@@ -150,14 +149,12 @@ trainer::trainer(
 		,   size_t batch_size
 		,   float alpha
 		,   float lambda
-		,   std::ofstream& log
 	)
-		:   log_(log)
-		,   params_ {}
+		:   params_ {}
 		,   grad_ {}
 		,   xgrad_(batch_size)
 		,   props_ {}
-		,   dataset_(log)
+		,   dataset_()
 		,   adam_(params_.data, grad_.data, alpha, lambda)
 		,   batch_size_(batch_size)
 		,   rem_(0)
@@ -213,20 +210,14 @@ trainer::trainer(
 		    params_.data[i] = dist(gen);
 		}
 
-        log.close();
-        log.open(LOGFILE);
-		log
+		std::clog
 			<< "Initialized "
 			<< PARAM_COUNT 
 			<< " parameters of neural network.\n"
 			<< std::endl;
 
         if (!ofile) {
-
-		    log 
-	            << "Unable to save neural network to file."
-			    << std::endl;
-
+		    std::cerr << "Unable to save neural network to file." << std::endl;
 	        std::exit(EXIT_FAILURE);
 	    }
 
@@ -247,10 +238,6 @@ int main(int argc, char *argv[])
 			std::deque<std::string>(argv + 1, argv + argc)
 		);
 
-	std::ofstream log(LOGFILE, std::ios::app);
-
-	if (!log) std::exit(EXIT_FAILURE);
-
 	while (!args.empty())
 	{
 		auto arg = args.front();
@@ -269,11 +256,11 @@ int main(int argc, char *argv[])
 			x = std::stof(value);
 		}
 		catch (const std::invalid_argument& e) {
-			log << value << " is not a number\n";
+			std::clog << value << " is not a number\n";
 			continue;
 		}
 		catch (const std::out_of_range& e) {
-			log << value << " is too large\n";
+			std::clog << value << " is too large\n";
 			continue;
 		}
 
@@ -296,16 +283,16 @@ int main(int argc, char *argv[])
             break_duration =static_cast<unsigned>(x);
         }
 		else {
-			log << "Unknown parameter: " << arg << std::endl;
+			std::clog << "Unknown parameter: " << arg << std::endl;
 		}
 	}
 
-	trainer trainer(workers, batch, alpha, lambda, log);
+	trainer trainer(workers, batch, alpha, lambda);
 
 	for (auto i=0; i< epochs; i++) 
 	{
         if (!workers) {
-            log << "There are no workers to train the model." << std::endl;
+            std::cerr << "There are no workers to train the model." << std::endl;
             std::exit(EXIT_FAILURE);
         }
 		trainer.train();

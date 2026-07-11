@@ -9,7 +9,6 @@
 #ifndef TRAINER_HPP
 #define TRAINER_HPP
 
-#include <fstream>
 #include <string>
 #include <vector>
 #include <list>
@@ -26,7 +25,6 @@ class trainer
 
 private:
 
-	std::ofstream& log_;
 	parameters params_;
 	gradients grad_;
 	std::vector<gradients> xgrad_;
@@ -59,7 +57,6 @@ public:
         ,   size_t batch_size
         ,   float alpha
         ,   float lambda
-        ,   std::ofstream& file
     );
 
 };

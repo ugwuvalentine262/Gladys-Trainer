@@ -6,7 +6,7 @@
  * modification, or distribution is not permitted.
  */
 
-#include <fstream>
+#include <iostream>
 #include <iomanip>
 #include <chrono>
 #include <cstdlib>
@@ -48,7 +48,7 @@ public:
 
 	~tester();
 
-	tester(size_t workers, std::ofstream& log);
+	tester(size_t workers);
 
 };
 
@@ -100,11 +100,8 @@ tester::~tester()
 	}
 }
 
-tester::tester(
-			size_t workers
-		,   std::ofstream& log
-	)
-		:   dataset_(log)
+tester::tester(size_t workers)
+		:   dataset_()
 		,   stack_ {}
 		,   params_ {}
 		,   threads_{}
@@ -126,10 +123,7 @@ tester::tester(
  
 	if (!file) 
 	{
-		log
-			<< "Unable to open neural network file!" 
-			<< std::endl;
-
+		std::cerr << "Unable to open neural network file!" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -137,10 +131,7 @@ tester::tester(
 
 	if (file.eof())
 	{
-		log
-			<< "Unable to read parameters from file!" 
-			<< std::endl;
-
+		std::cerr << "Unable to read parameters from file!" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -170,26 +161,24 @@ tester::tester(
 	elapsed.min = (seconds % 3600) / 60;
 	elapsed.sec = seconds % 60;
 
-	log
+	std::cout
 		<< std::fixed 
 		<< std::setprecision(6)
-		<< "q-mae: " 
-		<< std::setw(8)
+		<< std::setw(10)
 		<< q_mae_
-		<< " | wdl-cce: " 
-		<< std::setw(8)
+		<< " |" 
+		<< std::setw(10)
 		<< wdl_cce_
-		<< " | pi-cce: "
-		<< std::setw(8)
+		<< " |"
+		<< std::setw(10)
 		<< pi_cce_
-		<< " | pi-accuracy: "
-		<< std::setw(8) 
+		<< " |"
+		<< std::setw(10)
 		<< pi_accuracy1_
-		<< "(Top-1) "
-		<< std::setw(8) 
+		<< " |"
+		<< std::setw(10)
 		<< pi_accuracy3_
-        << "(Top-3)"
-		<< " | elapsed: "
+        << " |  "
 		<< std::setfill('0')
 		<< std::setw(2)
 		<< elapsed.hr 
@@ -206,10 +195,6 @@ int main(int argc, char *argv[])
 {
 	size_t workers=4;
 
-	std::ofstream log(LOGFILE, std::ios::app);
-
-	if (!log) exit(EXIT_FAILURE);
-
 	if (argc >= 3) 
 	{
 		std::string param = argv[1];
@@ -222,19 +207,21 @@ int main(int argc, char *argv[])
 			}
 			catch (const std::invalid_argument& e) {
 
-				log << value << " is not a number\n";
+				std::clog << value << " is not a number\n";
 			}
 			catch (const std::out_of_range& e) {
                 
-				log << value << " is too large\n";
+				std::clog << value << " is too large\n";
 			}
 
             if (!workers) {
-                log << "There are not workers to evaluate the model." << std::endl;
+                std::cerr << "There are no workers to evaluate the model." << std::endl;
                 std::exit(EXIT_FAILURE);
             }
 		}
 	}
 
-    tester(workers, log);
+    {
+        tester tester(workers);
+    }
 }
