@@ -92,7 +92,7 @@ init:
 	@$(call headings, $(RESULT_DIR)/$(TRAINLOG))
 	@$(call headings, $(RESULT_DIR)/$(TESTLOG))
 	@./bin/trainer epochs 0 workers 0 $(LOGGER)
-	@./bin/tester $(TEST_LOGGER)
+	@./bin/tester workers $(WORKERS) $(TEST_LOGGER)
 
 run:
 	@mkdir -p $(RESULT_DIR)
