@@ -15,7 +15,7 @@
 
 #include "policy.hpp"
 
-#define EDGE_COUNT 15
+#define EDGE_COUNT 19
 #define ATTRIBUTE_COUNT 23
 #define NODE_COUNT 113
 
@@ -70,14 +70,33 @@ private:
     const int mcount_;
 	nn_uint16_t attributes_data[NODE_COUNT][4];
 	nn_relation_t relations[NODE_COUNT][64];
-	nn_pair_t pairs[EDGE_COUNT][350];
+
+    nn_pair_t on_pair[256];
+    nn_pair_t on_inv_pair[256];
+    nn_pair_t adj_pair[84];
+    nn_pair_t above_pair[56];
+    nn_pair_t above_inv_pair[56];
+    nn_pair_t nxt_pair[56];
+    nn_pair_t nxt_inv_pair[56];
+    nn_pair_t ell_pair[140];
+    nn_pair_t ur_pair[49];
+    nn_pair_t ur_inv_pair[49];
+    nn_pair_t ul_pair[49];
+    nn_pair_t ul_inv_pair[49];
+    nn_pair_t hpath_pair[448];
+    nn_pair_t vpath_pair[448];
+    nn_pair_t dpath_pair[280];
+    nn_pair_t kpath_pair[280];
+    nn_pair_t main1_pair[64];
+    nn_pair_t main2_pair[64];
+    nn_pair_t main3_pair[64];
+
+	nn_pair_t *pairs[EDGE_COUNT];
 	nn_edge_t edges[EDGE_COUNT];
 	nn_node_t nodes[NODE_COUNT];
 
 	nn_attributes_t attributes[NODE_COUNT];
 	nn_graphnet_t graphnet;
-
-	int ep_file_;
 
 public:
 
