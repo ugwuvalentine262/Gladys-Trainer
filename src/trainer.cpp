@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 #include <fstream>
 #include <chrono>
+#include <ctime>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
@@ -27,6 +28,7 @@ void trainer::train()
     using clock = std::chrono::steady_clock;
 
 	auto start = clock::now();
+    char timestamp[24];
 
     dataset_.shuffle();
 
@@ -75,6 +77,9 @@ void trainer::train()
 	}
 
 	auto end = clock::now();
+    auto now = std::time(nullptr);
+
+    std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
 
     q_mse_ /= dataset_.size();
     q_mae_ /= dataset_.size();
@@ -123,6 +128,8 @@ void trainer::train()
 		<< std::setw(2)
 		<< elapsed.sec
 		<< std::setfill(' ')
+        << " | "
+        << timestamp
         << std::endl;
 
     std::ofstream file(NNFILE, std::ios::binary);

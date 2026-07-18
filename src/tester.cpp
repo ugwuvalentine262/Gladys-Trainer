@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <ctime>
 #include <cstdlib>
 #include <string>
 #include <list>
@@ -116,6 +117,7 @@ tester::tester(size_t workers)
 	    ,   pi_accuracy3_(0)
 {
 	std::ifstream file(NNFILE, std::ios::binary);
+    char timestamp[24];
 
     using clock = std::chrono::steady_clock;
 
@@ -149,6 +151,9 @@ tester::tester(size_t workers)
 	cv_.wait(lock, [this]() { return rem_==0; });
 
 	auto end = clock::now();
+    auto now = std::time(nullptr);
+
+    std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
 
     q_mse_ /= dataset_.size();
     q_mae_ /= dataset_.size();
@@ -166,7 +171,8 @@ tester::tester(size_t workers)
 	elapsed.sec = seconds % 60;
 
 	std::cout
-		<< std::fixed 
+
+		<< std::fixed
 		<< std::setprecision(7)
         << std::setw(10)
         << q_mse_
@@ -196,6 +202,8 @@ tester::tester(size_t workers)
 		<< std::setw(2)
 		<< elapsed.sec
 		<< std::setfill(' ')
+        << " | "
+        << timestamp
         << std::endl;
 }
 
