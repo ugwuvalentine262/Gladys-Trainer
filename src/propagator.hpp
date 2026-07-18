@@ -29,6 +29,7 @@ private:
 	float * const params_;
 
 	size_t& rem_;
+	float& q_mse_;
 	float& q_mae_;
 	float& wdl_cce_;
 	float& pi_cce_;
@@ -56,6 +57,7 @@ public:
 	propagator(
 			parameters& params
 		,   size_t& rem
+		,   float& q_mse
 		,   float& q_mae
 		,   float& wdl_cce
 		,   float& pi_cce

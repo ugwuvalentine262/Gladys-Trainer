@@ -49,6 +49,7 @@ void propagator::iterator()
         {
             std::lock_guard<std::mutex> lock(mtx_);
 
+            q_mse_ += error.q_mse;
             q_mae_ += error.q_mae;
             wdl_cce_ += error.wdl_cce;
             pi_cce_ += error.pi_cce;
@@ -72,6 +73,7 @@ propagator::propagator
 	(
 			parameters& params
 		,   size_t& rem
+		,   float& q_mse
 		,   float& q_mae
 		,   float& wdl_cce
 		,   float& pi_cce
@@ -86,6 +88,7 @@ propagator::propagator
 	)
 		:   params_(params.data)
         ,   rem_(rem)
+	    ,   q_mse_(q_mse)
 	    ,   q_mae_(q_mae)
 	    ,   wdl_cce_(wdl_cce)
 	    ,   pi_cce_(pi_cce)

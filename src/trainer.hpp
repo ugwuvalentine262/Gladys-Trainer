@@ -34,6 +34,7 @@ private:
 	const size_t batch_size_;
 
 	size_t rem_;
+	float q_mse_;
 	float q_mae_;
 	float wdl_cce_;
 	float pi_cce_;

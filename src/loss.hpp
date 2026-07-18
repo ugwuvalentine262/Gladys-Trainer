@@ -14,13 +14,15 @@
 struct error
 {
 	error(
-			float q_mae_
+			float q_mse_
+		,   float q_mae_
 		,   float wdl_cce_
 		,   float pi_cce_
 		,   float pi_accuracy1_
 		,   float pi_accuracy3_
 	)
-		: q_mae(q_mae_)
+		: q_mse(q_mse_)
+		, q_mae(q_mae_)
         , wdl_cce(wdl_cce_)
 		, pi_cce(pi_cce_)
 		, pi_accuracy1(pi_accuracy1_)
@@ -29,6 +31,7 @@ struct error
 
 public:
 
+	const float q_mse;
 	const float q_mae;
 	const float wdl_cce;
 	const float pi_cce;

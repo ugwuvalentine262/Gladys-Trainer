@@ -100,10 +100,31 @@ struct mae
 	}
 };
 
+struct mse
+{
+	static float forward(const WDL& z_hat, const WDL& y)
+	{
+        auto max = std::max(z_hat.win, std::max(z_hat.draw, z_hat.loss));
+
+        auto kw = std::exp(z_hat.win  - max);
+        auto kd = std::exp(z_hat.draw - max);
+        auto kl = std::exp(z_hat.loss - max);
+
+        auto sum = kw + kd + kl;
+
+        WDL y_hat(kw/sum, kd/sum, kl/sum);
+
+        auto diff = y_hat.q() - y.q();
+
+		return diff * diff;
+	}
+};
+
 error loss::forward(const neural_output& y_hat, const neural_output& y)
 {
 	return  error(
-					mae::forward(y_hat.wdl, y.wdl)
+					mse::forward(y_hat.wdl, y.wdl)
+				,   mae::forward(y_hat.wdl, y.wdl)
 				,   cce::forward(y_hat.wdl, y.wdl)
 				,   cce::forward(y_hat.z, y.z)
 				,   y_hat.z.accuracy(y.z, 1)

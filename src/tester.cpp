@@ -34,6 +34,7 @@ private:
 	std::condition_variable cv_;
 	std::mutex mtx_;
 	size_t rem_;
+	float q_mse_;
 	float q_mae_;
 	float wdl_cce_;
 	float pi_cce_;
@@ -79,6 +80,7 @@ void tester::iterator()
         {
             std::lock_guard<std::mutex> lock(mtx_);
 
+            q_mse_ += error.q_mse;
             q_mae_ += error.q_mae;
             wdl_cce_ += error.wdl_cce;
             pi_cce_ += error.pi_cce;
@@ -106,6 +108,7 @@ tester::tester(size_t workers)
 		,   params_ {}
 		,   threads_{}
 		,   rem_(dataset_.size())
+	    ,   q_mse_(0)
 	    ,   q_mae_(0)
 	    ,   wdl_cce_(0)
 	    ,   pi_cce_(0)
@@ -147,6 +150,7 @@ tester::tester(size_t workers)
 
 	auto end = clock::now();
 
+    q_mse_ /= dataset_.size();
     q_mae_ /= dataset_.size();
     wdl_cce_ /= dataset_.size();
     pi_cce_ /= dataset_.size();
@@ -164,6 +168,9 @@ tester::tester(size_t workers)
 	std::cout
 		<< std::fixed 
 		<< std::setprecision(7)
+        << std::setw(10)
+        << q_mse_
+        << " |"
 		<< std::setw(10)
 		<< q_mae_
 		<< " |" 

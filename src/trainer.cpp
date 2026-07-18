@@ -30,7 +30,7 @@ void trainer::train()
 
     dataset_.shuffle();
 
-    q_mae_=wdl_cce_=pi_cce_=pi_accuracy1_=pi_accuracy3_=0;
+    q_mse_=q_mae_=wdl_cce_=pi_cce_=pi_accuracy1_=pi_accuracy3_=0;
 
 	for (const auto& sample : dataset_)
 	{    
@@ -76,6 +76,7 @@ void trainer::train()
 
 	auto end = clock::now();
 
+    q_mse_ /= dataset_.size();
     q_mae_ /= dataset_.size();
     wdl_cce_ /= dataset_.size();
     pi_cce_ /= dataset_.size();
@@ -91,11 +92,15 @@ void trainer::train()
 	elapsed.sec = seconds % 60;
 
 	std::cout
-		<< std::fixed 
+
+		<< std::fixed
 		<< std::setprecision(7)
 		<< std::setw(10)
+		<< q_mse_
+		<< " |"
+		<< std::setw(10)
 		<< q_mae_
-		<< " |" 
+		<< " |"
 		<< std::setw(10)
 		<< wdl_cce_
 		<< " |"
@@ -178,6 +183,7 @@ trainer::trainer(
 
 				params_
 			,   rem_
+			,   q_mse_
 			,   q_mae_
 			,   wdl_cce_
 			,   pi_cce_
