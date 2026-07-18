@@ -15,7 +15,7 @@
 
 #include "policy.hpp"
 
-#define EDGE_COUNT 19
+#define EDGE_COUNT 15
 #define ATTRIBUTE_COUNT 23
 #define NODE_COUNT 113
 
@@ -83,10 +83,6 @@ private:
     nn_pair_t ur_inv_pair[49];
     nn_pair_t ul_pair[49];
     nn_pair_t ul_inv_pair[49];
-    nn_pair_t hpath_pair[448];
-    nn_pair_t vpath_pair[448];
-    nn_pair_t dpath_pair[280];
-    nn_pair_t kpath_pair[280];
     nn_pair_t main1_pair[64];
     nn_pair_t main2_pair[64];
     nn_pair_t main3_pair[64];

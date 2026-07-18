@@ -48,10 +48,6 @@ enum edge_type : nn_uint_t
     ,   UP_RIGHT_INV
     ,   UP_LEFT
     ,   UP_LEFT_INV
-    ,   H_PATH
-    ,   V_PATH
-    ,   D_PATH
-    ,   K_PATH
     ,   MAIN1
     ,   MAIN2
     ,   MAIN3
@@ -181,10 +177,6 @@ descriptor::descriptor
         ,   ur_inv_pair
         ,   ul_pair
         ,   ul_inv_pair
-        ,   hpath_pair
-        ,   vpath_pair
-        ,   dpath_pair
-        ,   kpath_pair
         ,   main1_pair
         ,   main2_pair
         ,   main3_pair
@@ -866,46 +858,4 @@ descriptor::descriptor
     INSERT_LINK(MAIN3, G3, S31), INSERT_LINK(MAIN3, G3, S63); 
     INSERT_LINK(MAIN3, G3, S32), INSERT_LINK(MAIN3, G3, S64);
 
-    auto rankof = [](int s) { return s >> 3; };
-    auto fileof = [](int s) { return s & 7; };
-
-    for (int k=0; k < 64; k++)
-    {
-        for (auto step : {+9, -9}) {
-            for (auto j=k+step;;j+=step) {
-                if (j<0||j>63) break;
-                if (std::abs(fileof(j)-fileof(j-step))>1)break;
-                if (std::abs(rankof(j)-rankof(j-step))>1)break;
-                INSERT_LINK(D_PATH, (nn_uint16_t)k, (nn_uint16_t)j);
-                if (b.mailbox[j]) break;
-            }
-        }
-        for (auto step : {+7, -7}) {
-            for (auto j=k+step;;j+=step) {
-                if (j<0||j>63) break;
-                if (std::abs(fileof(j)-fileof(j-step))>1)break;
-                if (std::abs(rankof(j)-rankof(j-step))>1)break;
-                INSERT_LINK(K_PATH, (nn_uint16_t)k, (nn_uint16_t)j);
-                if (b.mailbox[j]) break;
-            }
-        }
-        for (auto step : {+8, -8}) {
-            for (auto j=k+step;;j+=step) {
-                if (j<0||j>63) break;
-                if (std::abs(fileof(j)-fileof(j-step))>1)break;
-                if (std::abs(rankof(j)-rankof(j-step))>1)break;
-                INSERT_LINK(V_PATH, (nn_uint16_t)k, (nn_uint16_t)j);
-                if (b.mailbox[j]) break;
-            }
-        }
-        for (auto step : {+1, -1}) {
-            for (auto j=k+step;;j+=step) {
-                if (j<0||j>63) break;
-                if (std::abs(fileof(j)-fileof(j-step))>1)break;
-                if (std::abs(rankof(j)-rankof(j-step))>1)break;
-                INSERT_LINK(H_PATH, (nn_uint16_t)k, (nn_uint16_t)j);
-                if (b.mailbox[j]) break;
-            }
-        }
-    }
 }
