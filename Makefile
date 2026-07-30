@@ -7,9 +7,8 @@ ALPHA ?= 0.001
 LAMBDA ?= 0.01
 BATCH ?= 50
 BREAK ?= 0
-EMBEDDING ?= 16 # specified at compile-time
-RANGE ?= 0.4    # range of values used for initializing weights
-LOG ?= TRUE
+EMBEDDING ?= 32 # specified at compile-time
+RANGE ?= 0.4 # range of values used for initializing weights
 
 override CXX := g++
 override BACKUP_DIR := $(CURDIR)/backup
@@ -17,7 +16,6 @@ override RESULT_DIR := $(CURDIR)/result
 override DATASET_DIR := $(CURDIR)/dataset
 override ADAMFILE := adam
 override NNFILE := nn
-override SESSIONSLOG := sessions.txt
 override TRAINLOG := trainlog.txt
 override TESTLOG := testlog.txt
 override LOGFILE := log.txt
@@ -35,14 +33,7 @@ override TESTER_SRC := $(filter-out src/trainer.cpp src/adam.cpp, $(wildcard src
 override TESTER_HDR := $(filter-out src/trainer.hpp src/adam.hpp, $(wildcard src/*.hpp))
 override TESTER_OBJ := $(addprefix build/tester/, $(TESTER_SRC:src/%.cpp=%.o))
 
-ifeq ($(LOG), TRUE)
-override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(SESSIONSLOG)
-else ifeq ($(LOG), ON)
-override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(SESSIONSLOG)
-else ifeq ($(LOG), 1)
-override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(SESSIONSLOG)
-endif
-
+override SESSIONS_LOGGER := >> $(RESULT_DIR)/$(LOGFILE)
 override LOGGER := 2>> $(RESULT_DIR)/$(LOGFILE)
 override TEST_LOGGER := >> $(RESULT_DIR)/$(TESTLOG) $(LOGGER)
 override TRAIN_LOGGER := >> $(RESULT_DIR)/$(TRAINLOG) $(LOGGER)
@@ -52,12 +43,11 @@ override TRAIN_LOGGER := >> $(RESULT_DIR)/$(TRAINLOG) $(LOGGER)
 define copy
 	@rm -rf $(2)
 	@mkdir -p $(2)
-	@cp $(1)/$(NNFILE)       $(2)/$(NNFILE)       2>/dev/null || true
-	@cp $(1)/$(ADAMFILE)     $(2)/$(ADAMFILE)     2>/dev/null || true
-	@cp $(1)/$(TRAINLOG)     $(2)/$(TRAINLOG)     2>/dev/null || true
-	@cp $(1)/$(TESTLOG)      $(2)/$(TESTLOG)      2>/dev/null || true
-	@cp $(1)/$(SESSIONSLOG)  $(2)/$(SESSIONSLOG)  2>/dev/null || true
-	@cp $(1)/$(LOGFILE)      $(2)/$(LOGFILE)      2>/dev/null || true
+	@cp $(1)/$(NNFILE)   $(2)/$(NNFILE)   2>/dev/null || true
+	@cp $(1)/$(ADAMFILE) $(2)/$(ADAMFILE) 2>/dev/null || true
+	@cp $(1)/$(TRAINLOG) $(2)/$(TRAINLOG) 2>/dev/null || true
+	@cp $(1)/$(TESTLOG)  $(2)/$(TESTLOG)  2>/dev/null || true
+	@cp $(1)/$(LOGFILE)  $(2)/$(LOGFILE)  2>/dev/null || true
 endef
 
 define headings
